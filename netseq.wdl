@@ -116,7 +116,6 @@ task AlignReads {
 
         cp ~{refFasta} ./sacCer3.fa
         samtools faidx sacCer3.fa
-        gatk CreateSequenceDictionary -R ./sacCer3.fa
 
         STAR \
         --runMode genomeGenerate \
@@ -182,17 +181,20 @@ task BamToBedgraph {
     String bamDedupName = "~{sampleName}.bam"
 
     command <<<
+        echo $SHELL
         df
         set -e
 
         samtools index ~{AlignedBamFile}
-        mamba run -n umi_tools umi_tools dedup -I ~{AlignedBamFile} \
+        mamba activate umi_tools
+        umi_tools dedup -I ~{AlignedBamFile} \
             --output-stats=~{sampleName}.dedup.stats.log \
             --log=~{sampleName}.dedup.log \
             -S ~{bamDedupName} \
             --method unique \
             --umi-tag=~{umi_tag} --extract-umi-method=tag
 
+        mamba activate base
         bedtools genomecov -5 -bg -strand - -ibam ~{bamDedupName} | bgzip > ~{sampleName}.pos.bedgraph.gz
         bedtools genomecov -5 -bg -strand + -ibam ~{bamDedupName} | bgzip > ~{sampleName}.neg.bedgraph.gz
     >>>

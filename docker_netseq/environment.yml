@@ -2,14 +2,12 @@ name: base
 channels:
   - conda-forge
   - bioconda
-  - r
 dependencies:
-  - python
-  - r-base=4.0.5
-  - r-devtools
-  - sra-tools
-  - samtools
-  - gatk4
-  - pysam
-  - star
   - bedtools
+  - pyopenssl=20.0.1
+  - pysam
+  - python=3.9.1
+  - requests=2.25.1
+  - samtools
+  - star
+  - umi_tools=1.1.2

@@ -1,5 +1,5 @@
 {
   "NETseq.threads": 4,
-  "NETseq.refFasta": "https://github.com/rdshear/netseq/blob/main/test/sacCer3.fa", 
-  "NETseq.inputFastQ": "https://github.com/rdshear/netseq/blob/main/test/test-2.fastq.gz.1"
+  "NETseq.refFasta": "/Users/robertshear/Projects/netseq/test/sacCer3.fa", 
+  "NETseq.inputFastQ": "https://raw.githubusercontent.com/rdshear/netseq/main/test/test2.fastq.gz.1"
 }
