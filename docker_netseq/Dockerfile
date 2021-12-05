@@ -3,16 +3,17 @@
 # Net-seq allignment (fastq to bedgraph)
 #############################################################
 
-FROM continuumio/miniconda3:latest
-LABEL description="Components for NET-seq pipeline"
+FROM mambaorg/micromamba:0.15.3
+LABEL version="0.0.1"
+LABEL description="Container for NET-seq pipeline"
 
-WORKDIR /root
+# seperate environment for umi_tools due to prerequeisite conflicts
+RUN micromamba install -y -n base -c bioconda -c conda-forge \
+        bedtools htslib=1.13 openssl=1.1 python=3.9 samtools=1.13 star=2.7  && \
+    micromamba create -y -n umi_tools -c bioconda -c conda-forge umi_tools && \
+    micromamba clean --all --yes
 
-# Install the needed apps
-COPY environment.yml ./environment.yml
-RUN conda env update -f environment.yml
-
-# execution time scripts
-COPY scripts/ /home/netseq/scripts/
+WORKDIR /home/micromamba
+COPY --chown=micromamba:micromamba scripts/ scripts/
 
 CMD ["/bin/bash"]

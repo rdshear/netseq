@@ -129,14 +129,12 @@ task AlignReads {
         # star wants to create the directory itself
         rmdir "$tempStarDir"
 
-        samtools import -0 ~{Infile} | \
-        python3 /scripts/ExtractUmi.py /dev/stdin /dev/stdout 6 RX \
-        | STAR --runMode alignReads \
+        STAR --runMode alignReads \
             --genomeDir star_work \
             --runThreadN ~{threads} \
-            --readFilesIn /dev/stdin \
-            --readFilesCommand samtools view \
-            --readFilesType SAM SE \
+            --readFilesIn ~{Infile} \
+            --readFilesCommand zcat \
+            --readFilesType Fastx \
             --outTmpDir "$tempStarDir" \
             --outStd SAM \
             --outFileNamePrefix ~{sampleName}. \
@@ -147,6 +145,7 @@ task AlignReads {
             --clip3pNbases 0 \
             --clip5pNbases ~{umiWidth}  \
             --alignIntronMax 1 \
+        | python3 /home/micromamba/scripts/ExtractUmi.py /dev/stdin /dev/stdout ~{umiWidth} RX \
         | samtools sort >  ~{bamResultName}
     >>>
 
@@ -181,12 +180,13 @@ task BamToBedgraph {
     String bamDedupName = "~{sampleName}.bam"
 
     command <<<
-        echo $SHELL
-        df
         set -e
 
         samtools index ~{AlignedBamFile}
-        mamba activate umi_tools
+
+        eval "$(/bin/micromamba shell hook -s bash)"
+        micromamba activate umi_tools
+
         umi_tools dedup -I ~{AlignedBamFile} \
             --output-stats=~{sampleName}.dedup.stats.log \
             --log=~{sampleName}.dedup.log \
@@ -194,7 +194,7 @@ task BamToBedgraph {
             --method unique \
             --umi-tag=~{umi_tag} --extract-umi-method=tag
 
-        mamba activate base
+        micromamba activate base
         bedtools genomecov -5 -bg -strand - -ibam ~{bamDedupName} | bgzip > ~{sampleName}.pos.bedgraph.gz
         bedtools genomecov -5 -bg -strand + -ibam ~{bamDedupName} | bgzip > ~{sampleName}.neg.bedgraph.gz
     >>>
