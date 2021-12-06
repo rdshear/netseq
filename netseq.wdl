@@ -16,11 +16,13 @@ workflow NETseq {
         inputFastQ: "Illumina Read file, FASTQ format."
         sampleName: "Sample name. If not specified, taken as base name of fastq input file"
         adapterSequence: "Adapter sequence to trim from 3' end"
-        umiWidth: "number of bases in UMI. Defaults to 6. If zero, no UMI deduplication occurs"
+        umiWidth: "Number of bases in UMI. Defaults to 6. If zero, no UMI deduplication occurs"
+        umi_tag: "SAM tag for the UMI. Defaults to RX, which is the standard SAM recommended tag"
         outSAMmultNmax: "The number of alignments returned for each read. If 1, then no multimmappers are returned."
         OutFilterMultiMax: "If a read has multimappers in excess of this paramter, then the read is disreagarded. Defaults"
 
         #Outputs
+
         output_bam: "aligned, deduped BAM faile"
         bedgraph_pos: "Occupancy counts on + strand, bedgraph format"
         bedgraph_neg: "Occupancy counts on - strand, bedgraph format"
@@ -33,7 +35,6 @@ workflow NETseq {
     }
     input {
 
-
         # Genome source for STAR
         File refFasta
         Int outSAMmultNmax = 1     # Default to outputting primary alignment only. (Multimap count still available)
@@ -44,7 +45,7 @@ workflow NETseq {
         String sampleName = basename(basename(basename(inputFastQ, ".1"), ".gz"), ".fastq")
         String adapterSequence = "ATCTCGTATGCCGTCTTCTGCTTG"
         Int umiWidth = 6
-        
+        String umi_tag = "RX"
 
         # environment
         String netseq_docker = 'rdshear/netseq'
@@ -64,16 +65,19 @@ workflow NETseq {
             OutFilterMultiMax = OutFilterMultiMax,
             adapterSequence = adapterSequence,
             umiWidth = umiWidth,
+            umi_tag = umi_tag,
             threads = threads,
             docker = netseq_docker,
             memory = memory,
             preemptible = preemptible
     }
-
+    
     call BamToBedgraph {
         input:
             AlignedBamFile = AlignReads.output_bam,
             sampleName = sampleName,
+            umiWidth = umiWidth,
+            umi_tag = umi_tag,
             threads = threads,
             docker = netseq_docker,
             memory = memory,
@@ -101,7 +105,7 @@ task AlignReads {
         Int OutFilterMultiMax
         String adapterSequence
         Int umiWidth
-
+        String umi_tag
 
         Int threads = 8
         String docker
@@ -128,13 +132,21 @@ task AlignReads {
         tempStarDir=$(mktemp -d)
         # star wants to create the directory itself
         rmdir "$tempStarDir"
-
-        STAR --runMode alignReads \
+        # TODO: manage fastq file type fastq and fastq.gz
+        samtools import -0 ~{Infile} \
+        | if [[ ~{umiWidth} -ne 0 ]]
+            then
+                python3 /home/micromamba/scripts/ExtractUmi.py \
+                    /dev/stdin /dev/stdout ~{umiWidth} ~{umi_tag} 
+            else
+                cat
+        fi \
+        | STAR --runMode alignReads \
             --genomeDir star_work \
             --runThreadN ~{threads} \
-            --readFilesIn ~{Infile} \
-            --readFilesCommand zcat \
-            --readFilesType Fastx \
+            --readFilesIn /dev/stdin \
+            --readFilesCommand samtools view \
+            --readFilesType SAM SE \
             --outTmpDir "$tempStarDir" \
             --outStd SAM \
             --outFileNamePrefix ~{sampleName}. \
@@ -145,7 +157,6 @@ task AlignReads {
             --clip3pNbases 0 \
             --clip5pNbases ~{umiWidth}  \
             --alignIntronMax 1 \
-        | python3 /home/micromamba/scripts/ExtractUmi.py /dev/stdin /dev/stdout ~{umiWidth} RX \
         | samtools sort >  ~{bamResultName}
     >>>
 
@@ -169,7 +180,8 @@ task BamToBedgraph {
     input {
         File AlignedBamFile
         String sampleName
-        String umi_tag = 'RX'
+        Int umiWidth
+        String umi_tag
 
         Int threads
         String docker
@@ -178,23 +190,29 @@ task BamToBedgraph {
     }
 
     String bamDedupName = "~{sampleName}.bam"
-
+    
     command <<<
         set -e
 
-        samtools index ~{AlignedBamFile}
+        if [[ ~{umiWidth} -eq 0 ]]
+        then
+            mv ~{AlignedBamFile} ~{bamDedupName}
+            touch ~{sampleName}.dedup.log
+        else
+            samtools index ~{AlignedBamFile}
 
-        eval "$(/bin/micromamba shell hook -s bash)"
-        micromamba activate umi_tools
+            eval "$(/bin/micromamba shell hook -s bash)"
+            micromamba activate umi_tools
 
-        umi_tools dedup -I ~{AlignedBamFile} \
-            --output-stats=~{sampleName}.dedup.stats.log \
-            --log=~{sampleName}.dedup.log \
-            -S ~{bamDedupName} \
-            --method unique \
-            --umi-tag=~{umi_tag} --extract-umi-method=tag
+            umi_tools dedup -I ~{AlignedBamFile} \
+                --output-stats=~{sampleName}.dedup.stats.log \
+                --log=~{sampleName}.dedup.log \
+                -S ~{bamDedupName} \
+                --method unique \
+                --umi-tag=~{umi_tag} --extract-umi-method=tag
+            micromamba activate base
+        fi
 
-        micromamba activate base
         bedtools genomecov -5 -bg -strand - -ibam ~{bamDedupName} | bgzip > ~{sampleName}.pos.bedgraph.gz
         bedtools genomecov -5 -bg -strand + -ibam ~{bamDedupName} | bgzip > ~{sampleName}.neg.bedgraph.gz
     >>>
