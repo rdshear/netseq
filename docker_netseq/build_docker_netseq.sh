@@ -1,3 +1,5 @@
 cd /Users/robertshear/Projects/netseq/docker_netseq
-docker build . -t rdshear/netseq
-docker push rdshear/netseq
+imagename=rdshear/netseq
+tagname=${imagename}:$(cat ../VERSION)
+docker build . -t ${tagname}
+docker push ${tagname}
