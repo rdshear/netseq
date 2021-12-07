@@ -9,10 +9,11 @@ workflow NETseq {
     # TODO quality filter
     parameter_meta {
         # STAR index input
+        # TODO select genome name
         refFasta: "Genome Reference File, FASTA format"
 
         # STAR alignment parameters
-
+        # TODO allow pull from SRA with sratools
         inputFastQ: "Illumina Read file, FASTQ format."
         sampleName: "Sample name. If not specified, taken as base name of fastq input file"
         adapterSequence: "Adapter sequence to trim from 3' end"
@@ -71,28 +72,16 @@ workflow NETseq {
             memory = memory,
             preemptible = preemptible
     }
-    
-    call BamToBedgraph {
-        input:
-            AlignedBamFile = AlignReads.output_bam,
-            sampleName = sampleName,
-            umiWidth = umiWidth,
-            umi_tag = umi_tag,
-            threads = threads,
-            docker = netseq_docker,
-            memory = memory,
-            preemptible = preemptible
-    }
 
     output {
-        File output_bam = BamToBedgraph.BamFileDeduped
-        File bedgraph_pos = BamToBedgraph.CoverageBedgraph_Pos
-        File bedgraph_neg = BamToBedgraph.CoverageBedgraph_Neg
+        File output_bam = AlignReads.BamFileDeduped
+        File bedgraph_pos = AlignReads.CoverageBedgraph_Pos
+        File bedgraph_neg = AlignReads.CoverageBedgraph_Neg
 
         Array[File] logs = [AlignReads.star_log,
                                     AlignReads.star_log_std,
                                     AlignReads.star_log_final,
-                                    BamToBedgraph.DedupLogs]
+                                    AlignReads.DedupLogs]
     }
 }
 
@@ -114,6 +103,7 @@ task AlignReads {
     }
 
     String bamResultName = "~{sampleName}.aligned.bam"
+    String bamDedupName = "~{sampleName}.bam"
 
     command <<<
         set -e
@@ -158,53 +148,17 @@ task AlignReads {
             --clip5pNbases ~{umiWidth}  \
             --alignIntronMax 1 \
         | samtools sort >  ~{bamResultName}
-    >>>
-
-    output {
-        File output_bam = bamResultName
-        File star_log_final = "~{sampleName}.Log.final.out"
-        File star_log = "~{sampleName}.Log.out"
-        File star_log_std =  "~{sampleName}.Log.std.out"
-    }
-
-    runtime {
-        docker: docker
-        memory: memory
-        cpu: threads
-        disks: "local-disk 25 SSD"
-        preemptible: preemptible
-    }
-}
-
-task BamToBedgraph {
-    input {
-        File AlignedBamFile
-        String sampleName
-        Int umiWidth
-        String umi_tag
-
-        Int threads
-        String docker
-        String memory
-        Int preemptible
-    }
-
-    String bamDedupName = "~{sampleName}.bam"
-    
-    command <<<
-        set -e
 
         if [[ ~{umiWidth} -eq 0 ]]
         then
-            mv ~{AlignedBamFile} ~{bamDedupName}
             touch ~{sampleName}.dedup.log
         else
-            samtools index ~{AlignedBamFile}
+            samtools index ~{bamResultName}
 
             eval "$(/bin/micromamba shell hook -s bash)"
             micromamba activate umi_tools
 
-            umi_tools dedup -I ~{AlignedBamFile} \
+            umi_tools dedup -I ~{bamResultName} \
                 --output-stats=~{sampleName}.dedup.stats.log \
                 --log=~{sampleName}.dedup.log \
                 -S ~{bamDedupName} \
@@ -217,18 +171,22 @@ task BamToBedgraph {
         bedtools genomecov -5 -bg -strand + -ibam ~{bamDedupName} | bgzip > ~{sampleName}.neg.bedgraph.gz
     >>>
 
-        output {
-            File BamFileDeduped = bamDedupName
-            File CoverageBedgraph_Pos = '~{sampleName}.pos.bedgraph.gz'
-            File CoverageBedgraph_Neg = '~{sampleName}.neg.bedgraph.gz'
-            File DedupLogs = '~{sampleName}.dedup.log'
+    output {
+        File star_log_final = "~{sampleName}.Log.final.out"
+        File star_log = "~{sampleName}.Log.out"
+        File star_log_std =  "~{sampleName}.Log.std.out"
+        File BamFileDeduped = bamDedupName
+        File CoverageBedgraph_Pos = '~{sampleName}.pos.bedgraph.gz'
+        File CoverageBedgraph_Neg = '~{sampleName}.neg.bedgraph.gz'
+        File DedupLogs = '~{sampleName}.dedup.log'
     }
 
+    # TODO: parameterize disk capacity
     runtime {
         docker: docker
         memory: memory
         cpu: threads
+        disks: "local-disk 25 SSD"
         preemptible: preemptible
     }
-
 }
