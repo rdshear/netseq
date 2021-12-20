@@ -7,13 +7,15 @@ workflow NETseq {
         email:  "rshear@gmail.com"
     }
     # TODO quality filter
-    parameter_meta {
+    # TODO allow pull from SRA with sratools
+    # TODO cleanup intermediate disk files
+    # TODO: parameterize disk capacity
+    # TODO select genome name
+parameter_meta {
         # STAR index input
-        # TODO select genome name
         refFasta: "Genome Reference File, FASTA format"
 
         # STAR alignment parameters
-        # TODO allow pull from SRA with sratools
         inputFastQ: "Illumina Read file, FASTQ format."
         sampleName: "Sample name. If not specified, taken as base name of fastq input file"
         adapterSequence: "Adapter sequence to trim from 3' end"
@@ -181,7 +183,6 @@ task AlignReads {
         File DedupLogs = '~{sampleName}.dedup.log'
     }
 
-    # TODO: parameterize disk capacity
     runtime {
         docker: docker
         memory: memory
