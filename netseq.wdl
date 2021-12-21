@@ -51,7 +51,7 @@ parameter_meta {
         String umi_tag = "RX"
 
         # environment
-        String netseq_docker = 'rdshear/netseq'
+        String netseq_docker = 'quay.io/rdshear/netseq'
         Int preemptible = 1
         String memory = "8G"
         Int threads = 8
