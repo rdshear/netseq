@@ -34,7 +34,7 @@ parameter_meta {
         netseq_docker: "Name of docker image"
         threads: "Number of CPUs to request for task runtimes"
         memory: "Memory required, in format appropriate to platform. Default is 8G"
-        preemptible: "For terra.bio (GCP), if 1, then attempt to run in preemptbile mode first"
+        preemptible: "For terra.bio (GCP), Number of retries in premptable mode before running in on-demand mode. If 1, then attempt to run in preemptbile mode once"
     }
     input {
 
@@ -165,7 +165,9 @@ task AlignReads {
                 --log=~{sampleName}.dedup.log \
                 -S ~{bamDedupName} \
                 --method unique \
-                --umi-tag=~{umi_tag} --extract-umi-method=tag
+                --umi-tag=~{umi_tag} \
+                --extract-umi-method=tag \
+                --random-seed=20211221
             micromamba activate base
         fi
 
