@@ -4,3 +4,7 @@ workflows:
      primaryDescriptorPath: /netseq.wdl
      testParameterFiles:
          - /test/inputs.json
+   - subclass: WDL
+     primaryDescriptorPath: /chcker_netseq.wdl
+     testParameterFiles:
+         - /test/checker_inputs.json

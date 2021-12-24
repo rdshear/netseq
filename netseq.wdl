@@ -1,8 +1,7 @@
 version 1.0
 
-workflow NETseq {
+workflow netseq {
         meta {
-        description: "NET-seq determine RNAP II occupancy. Pre-processes short reads with UMIs in FASTQ format, removes 3' adapter, aligns with reference genome, and produces bam file as well as BEDgraph file of occupancy at each NT position."
         author: "Robert D. Shear"
         email:  "rshear@gmail.com"
     }
@@ -13,7 +12,7 @@ workflow NETseq {
     # TODO select genome name
 parameter_meta {
         # STAR index input
-        refFasta: "Genome Reference File, FASTA format"
+        refFasta: "Url to genome geference gile, FASTA format"
 
         # STAR alignment parameters
         inputFastQ: "Illumina Read file, FASTQ format."
@@ -39,7 +38,7 @@ parameter_meta {
     input {
 
         # Genome source for STAR
-        File refFasta
+        String refFasta
         Int outSAMmultNmax = 1     # Default to outputting primary alignment only. (Multimap count still available)
         Int OutFilterMultiMax = 10 # Default to dropping reads with more than 10 alignments
 
@@ -90,7 +89,7 @@ parameter_meta {
 task AlignReads {
     input {
         File Infile
-        File refFasta
+        String refFasta
         String sampleName
         Int outSAMmultNmax
         Int OutFilterMultiMax
@@ -109,8 +108,8 @@ task AlignReads {
 
     command <<<
         set -e
-
-        cp ~{refFasta} ./sacCer3.fa
+        # TODO parameterize genome name
+        wget ~{refFasta} > ./sacCer3.fa
         samtools faidx sacCer3.fa
 
         STAR \
