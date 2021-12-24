@@ -108,11 +108,14 @@ task AlignReads {
 
     command <<<
         set -e
-        # TODO parameterize genome name
-        echo ~{refFasta} 
-        wget --help
-        wget ~{refFasta} > ./sacCer3.fa
-        samtools faidx sacCer3.fa
+
+        # make sure that miniconda is properly initialized whether interactive or not
+        . /usr/local/bin/_entrypoint.sh
+
+        # TODO scaCer3 --> genome parameter value
+        wget --quiet ~{refFasta} -O sacCer3.fa
+
+        samtools faidx ./sacCer3.fa
 
         STAR \
         --runMode genomeGenerate \
@@ -157,8 +160,6 @@ task AlignReads {
             touch ~{sampleName}.dedup.log
         else
             samtools index ~{bamResultName}
-
-            eval "$(/bin/micromamba shell hook -s bash)"
             micromamba activate umi_tools
 
             umi_tools dedup -I ~{bamResultName} \
