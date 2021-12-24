@@ -109,6 +109,8 @@ task AlignReads {
     command <<<
         set -e
         # TODO parameterize genome name
+        echo ~{refFasta} 
+        wget --help
         wget ~{refFasta} > ./sacCer3.fa
         samtools faidx sacCer3.fa
 
