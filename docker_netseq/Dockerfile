@@ -3,8 +3,7 @@
 # Net-seq allignment (fastq to bedgraph)
 #############################################################
 
-FROM mambaorg/micromamba:0.19.1
-LABEL version="0.0.1"
+FROM mambaorg/micromamba:0.15.3
 LABEL description="Container for NET-seq pipeline"
 
 # seperate environment for umi_tools due to prerequeisite conflicts
