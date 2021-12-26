@@ -17,3 +17,8 @@ q`
 - bedgraph.gz occupancy counts
 - bam files
 - logs from STAR and deduplication task
+
+### Acknowledgements
+
+TBS
+https://github.com/dockstore/checker-WDL-templates
