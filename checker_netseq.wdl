@@ -4,7 +4,7 @@ import "netseq.wdl" as netseq_wf
 
 workflow checker_netseq {
         meta {
-        description: "Quick check for quay.io/rdshear/netseq workflow"
+        description: "Quick check for dshear/netseq workflow"
         author: "Robert D. Shear"
         email:  "rshear@gmail.com"
     }
@@ -57,6 +57,6 @@ task md5_filecheck {
     >>>
 
     runtime {
-        docker: 'quay.io/rdshear/netseq'
+        docker: 'rdshear/netseq'
     }
 }
