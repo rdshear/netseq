@@ -110,7 +110,7 @@ task AlignReads {
         set -e
 
         # make sure that miniconda is properly initialized whether interactive or not
-        . /usr/local/bin/_entrypoint.sh
+        . _entrypoint.sh
 
         # TODO scaCer3 --> genome parameter value
         wget --quiet ~{refFasta} -O sacCer3.fa
