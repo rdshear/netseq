@@ -18,7 +18,3 @@ q`
 - bam files
 - logs from STAR and deduplication task
 
-### Acknowledgements
-
-TBS
-https://github.com/dockstore/checker-WDL-templates

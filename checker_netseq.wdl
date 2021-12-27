@@ -4,7 +4,7 @@ import "netseq.wdl" as netseq_wf
 
 workflow checker_netseq {
         meta {
-        description: "Quick check for dshear/netseq workflow"
+        description: "Quick check for rdshear/netseq workflow"
         author: "Robert D. Shear"
         email:  "rshear@gmail.com"
     }
