@@ -47,7 +47,7 @@ task md5_filecheck {
         set -e
 
         # make sure that miniconda is properly initialized whether interactive or not
-        . /usr/local/bin/_entrypoint.sh
+        . /bin/entrypoint.sh
 
         samtools view ~{output_bam} > ~{sampleName}.sam
         gunzip -c ~{bedgraph_neg} > ~{sampleName}.neg.bedgraph

@@ -41,7 +41,7 @@ vignettes/*.pdf
 # macOS dross
 .DS_Store
 
-# cromwell / dockstore detreitus
+# cromwell / dockstore detritus
 cromwell-input/*
 Cromwell.stderr.txt
 Cromwell.stdout.txt
