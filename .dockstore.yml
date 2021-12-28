@@ -1,14 +1,12 @@
 version: 1.2
 workflows:
-   -
-      subclass: WDL
-      primaryDescriptorPath: /netseq.wdl
-      testParameterFiles:
+   - subclass: WDL
+     primaryDescriptorPath: /netseq.wdl
+     testParameterFiles:
          - /test/test-2/inputs.json
-      name: netseq
-   -
-      subclass: WDL
-      primaryDescriptorPath: /checker_netseq.wdl
-      testParameterFiles:
-         - /test/test-2/chcker_inputs.json
-      name: checker_netseq
+     name: netseq
+   - subclass: WDL
+     primaryDescriptorPath: /checker_netseq.wdl
+     testParameterFiles:
+        - /test/test-2/chcker_inputs.json
+     name: checker_netseq
