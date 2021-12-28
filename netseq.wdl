@@ -6,7 +6,6 @@ workflow netseq {
         email:  "rshear@gmail.com"
     }
     # TODO quality filter
-    # TODO allow pull from SRA with sratools
     # TODO cleanup intermediate disk files
     # TODO: parameterize disk capacity
     # TODO select genome name
@@ -15,7 +14,9 @@ parameter_meta {
         refFasta: "Url to genome geference gile, FASTA format"
 
         # STAR alignment parameters
-        inputFastQ: "Illumina Read file, FASTQ format."
+        inputFastQ: "Illumina Read file, FASTQ format"
+        sraRunId: "SRA Run ID, format: SRA000000. If inputFastQ is absent, then pull from NCBI SRA database"
+        maxSpotCount: "If not zero, then maximum number of fastQ record to read"
         sampleName: "Sample name. If not specified, taken as base name of fastq input file"
         adapterSequence: "Adapter sequence to trim from 3' end"
         umiWidth: "Number of bases in UMI. Defaults to 6. If zero, no UMI deduplication occurs"
@@ -43,8 +44,10 @@ parameter_meta {
         Int OutFilterMultiMax = 10 # Default to dropping reads with more than 10 alignments
 
         # Unprocessed reads
-        File inputFastQ
-        String sampleName = basename(basename(basename(inputFastQ, ".1"), ".gz"), ".fastq")
+        File? inputFastQ
+        String sraRunId = ""
+        Int maxSpotCount = 0
+        String sampleName = basename(basename(basename(select_first([inputFastQ, sraRunId]), ".1"), ".gz"), ".fastq")
         String adapterSequence = "ATCTCGTATGCCGTCTTCTGCTTG"
         Int umiWidth = 6
         String umi_tag = "RX"
@@ -61,6 +64,8 @@ parameter_meta {
     call AlignReads {
         input:
             Infile = inputFastQ,
+            sraRunId = sraRunId,
+            maxSpotCount = maxSpotCount,
             refFasta = refFasta,
             sampleName = sampleName,
             outSAMmultNmax = outSAMmultNmax,
@@ -88,7 +93,9 @@ parameter_meta {
 
 task AlignReads {
     input {
-        File Infile
+        File? Infile
+        String sraRunId
+        Int maxSpotCount
         String refFasta
         String sampleName
         Int outSAMmultNmax
@@ -105,6 +112,7 @@ task AlignReads {
 
     String bamResultName = "~{sampleName}.aligned.bam"
     String bamDedupName = "~{sampleName}.bam"
+
 
     command <<<
         set -e
@@ -128,8 +136,20 @@ task AlignReads {
         tempStarDir=$(mktemp -d)
         # star wants to create the directory itself
         rmdir "$tempStarDir"
-        # TODO: manage fastq file type fastq and fastq.gz
-        samtools import -0 ~{Infile} \
+
+        # If Infile exists, then pull with samtools, otherwise pull from SRA
+        if [ -n "~{Infile}" ];
+            then
+                samtools import -0 ~{Infile}
+            else
+                sam-dump ~{sraRunId} || true # '|| true' so that processing continues if maxSpotCount > 0
+        fi \
+        | if [[ ~{maxSpotCount} -ne 0 ]]
+            then 
+                 head -n ~{maxSpotCount} 
+            else
+                cat
+        fi \
         | if [[ ~{umiWidth} -ne 0 ]]
             then
                 python3 /home/micromamba/scripts/ExtractUmi.py \
