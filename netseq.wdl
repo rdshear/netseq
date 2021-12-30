@@ -5,17 +5,14 @@ workflow netseq {
         author: "Robert D. Shear"
         email:  "rshear@gmail.com"
     }
-    # TODO quality filter
-    # TODO cleanup intermediate disk files
-    # TODO: parameterize disk capacity
-    # TODO select genome name
+
 parameter_meta {
         # STAR index input
         refFasta: "Url to genome geference gile, FASTA format"
+        genomeName: "Geneome name, UCSC version name, default sacCer3"
 
         # STAR alignment parameters
         inputFastQ: "Illumina Read file, FASTQ format"
-        sraRunId: "SRA Run ID, format: SRA000000. If inputFastQ is absent, then pull from NCBI SRA database"
         maxSpotCount: "If not zero, then maximum number of fastQ record to read"
         sampleName: "Sample name. If not specified, taken as base name of fastq input file"
         adapterSequence: "Adapter sequence to trim from 3' end"
@@ -40,14 +37,14 @@ parameter_meta {
 
         # Genome source for STAR
         String refFasta
+        String genomeName = "sacCer3"
         Int outSAMmultNmax = 1     # Default to outputting primary alignment only. (Multimap count still available)
         Int OutFilterMultiMax = 10 # Default to dropping reads with more than 10 alignments
 
         # Unprocessed reads
-        File? inputFastQ
-        String sraRunId = ""
+        File inputFastQ
         Int maxSpotCount = 0
-        String sampleName = basename(basename(basename(select_first([inputFastQ, sraRunId]), ".1"), ".gz"), ".fastq")
+        String sampleName = basename(basename(basename(inputFastQ, ".1"), ".gz"), ".fastq")
         String adapterSequence = "ATCTCGTATGCCGTCTTCTGCTTG"
         Int umiWidth = 6
         String umi_tag = "RX"
@@ -64,10 +61,10 @@ parameter_meta {
     call AlignReads {
         input:
             Infile = inputFastQ,
-            sraRunId = sraRunId,
             maxSpotCount = maxSpotCount,
             refFasta = refFasta,
             sampleName = sampleName,
+            genomeName = genomeName,
             outSAMmultNmax = outSAMmultNmax,
             OutFilterMultiMax = OutFilterMultiMax,
             adapterSequence = adapterSequence,
@@ -93,10 +90,10 @@ parameter_meta {
 
 task AlignReads {
     input {
-        File? Infile
-        String sraRunId
+        File Infile
         Int maxSpotCount
         String refFasta
+        String genomeName
         String sampleName
         Int outSAMmultNmax
         Int OutFilterMultiMax
@@ -120,16 +117,15 @@ task AlignReads {
         # make sure that miniconda is properly initialized whether interactive or not
         . /bin/entrypoint.sh
 
-        # TODO scaCer3 --> genome parameter value
-        wget --quiet ~{refFasta} -O sacCer3.fa
+        wget --quiet ~{refFasta} -O ~{genomeName}.fa
 
-        samtools faidx ./sacCer3.fa
+        samtools faidx ./~{genomeName}.fa
 
         STAR \
         --runMode genomeGenerate \
         --runThreadN ~{threads} \
         --genomeDir star_work \
-        --genomeFastaFiles ./sacCer3.fa \
+        --genomeFastaFiles ./~{genomeName}.fa \
         --genomeSAindexNbases 10
  
         # force the temp directory to the container's disks
@@ -137,16 +133,10 @@ task AlignReads {
         # star wants to create the directory itself
         rmdir "$tempStarDir"
 
-        # If Infile exists, then pull with samtools, otherwise pull from SRA
-        if [ -n "~{Infile}" ];
-            then
-                samtools import -0 ~{Infile}
-            else
-                sam-dump ~{sraRunId} || true # '|| true' so that processing continues if maxSpotCount > 0
-        fi \
+        samtools import -0 ~{Infile} \
         | if [[ ~{maxSpotCount} -ne 0 ]]
             then 
-                 head -n ~{maxSpotCount} 
+                head -n ~{maxSpotCount} 
             else
                 cat
         fi \

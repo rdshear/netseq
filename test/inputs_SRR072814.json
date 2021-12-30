@@ -1,6 +1,0 @@
-{
-  "netseq.threads": 4,
-  "netseq.refFasta": "/Users/robertshear/Projects/netseq/test/sacCer3.fa", 
-  "netseq.inputFastQ": "/Users/robertshear/Downloads/SRR072814.fastq.gz",
-  "netseq.umiWidth": 0
-}
