@@ -10,7 +10,7 @@ LABEL description="Container for NET-seq pipeline"
 RUN micromamba install -y -n base -c bioconda -c conda-forge \
         bedtools htslib=1.13 openssl=1.1 python=3.9 \
         samtools=1.13 star=2.7 wget && \
-    micromamba create -y -n umi_tools -c bioconda -c conda-forge umi_tools && \
+    micromamba create -y -n umi_tools -c bioconda -c conda-forge umi_tools time && \
     micromamba clean --all --yes
 
 WORKDIR /home/micromamba

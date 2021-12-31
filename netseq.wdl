@@ -117,8 +117,6 @@ task AlignReads {
         # make sure that miniconda is properly initialized whether interactive or not
         . /bin/entrypoint.sh
 
-        micromamba install -y -n umi_tools -c conda-forge time
-
         wget --quiet ~{refFasta} -O ~{genomeName}.fa
         echo tp1 $(date) $(grep VmPeak /proc/self/status)
         samtools faidx ./~{genomeName}.fa
