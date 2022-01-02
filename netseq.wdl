@@ -118,10 +118,9 @@ task AlignReads {
         . /bin/entrypoint.sh
 
         wget --quiet ~{refFasta} -O ~{genomeName}.fa
-        echo tp1 $(date) $(grep VmPeak /proc/self/status)
+
         samtools faidx ./~{genomeName}.fa
-        echo tp2 $(date) $(grep VmPeak /proc/self/status)
-        
+
         STAR \
         --runMode genomeGenerate \
         --runThreadN ~{threads} \
@@ -129,8 +128,6 @@ task AlignReads {
         --genomeFastaFiles ./~{genomeName}.fa \
         --genomeSAindexNbases 10
  
-         echo tp3 $(date) $(grep VmPeak /proc/self/status)
-
         # force the temp directory to the container's disks
         tempStarDir=$(mktemp -d)
         # star wants to create the directory itself
@@ -168,8 +165,6 @@ task AlignReads {
             --alignIntronMax 1 \
         | samtools sort >  ~{bamResultName}
 
-        echo tp4 $(date) $(grep VmPeak /proc/self/status)
-
         if [[ ~{umiWidth} -eq 0 ]]
         then
             touch ~{sampleName}.dedup.log
@@ -177,7 +172,7 @@ task AlignReads {
             samtools index ~{bamResultName}
             micromamba activate umi_tools
 
-            /opt/conda/envs/umi_tools/bin/time -v umi_tools dedup -I ~{bamResultName} \
+            umi_tools dedup -I ~{bamResultName} \
                 --output-stats=~{sampleName}.dedup.stats.log \
                 --log=~{sampleName}.dedup.log \
                 -S ~{bamDedupName} \
@@ -188,12 +183,8 @@ task AlignReads {
             micromamba activate base
         fi
 
-        echo tp5 $(date) $(grep VmPeak /proc/self/status)
-
         bedtools genomecov -5 -bg -strand - -ibam ~{bamDedupName} | bgzip > ~{sampleName}.pos.bedgraph.gz
         bedtools genomecov -5 -bg -strand + -ibam ~{bamDedupName} | bgzip > ~{sampleName}.neg.bedgraph.gz
-
-        echo $(date) $(grep VmPeak /proc/self/status)
     >>>
 
     output {
