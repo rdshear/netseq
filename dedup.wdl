@@ -23,8 +23,8 @@ parameter_meta {
 
         File Infile
 #        Int maxSpotCount = 0
-        Int total_reads = 0
-        Int total_bases = 0
+        Float total_reads = 0
+        Float total_bases = 0
 
         # environment
         String netseq_docker = 'rdshear/bbtools'
@@ -67,7 +67,7 @@ task Dedup {
 
     command <<<
         set -e
-
+        echo 'calc memory=~{memory}'
         . /root/bbmap/dedupe.sh -eoom ac=f in=~{Infile} out="todo.fastq.gz"
     >>>
 
