@@ -5,9 +5,8 @@ workflow dedup {
         author: "Robert D. Shear"
         email:  "rshear@gmail.com"
     }
-
 parameter_meta {
-        inputFastQ: "Illumina Read file, FASTQ format"
+        Infile: "Illumina Read file, FASTQ or sam/bam format"
 #        maxSpotCount: "If not zero, then maximum number of fastQ record to read"
 
         #Outputs
@@ -22,27 +21,29 @@ parameter_meta {
     }
     input {
 
-        File inputFastQ
+        File Infile
 #        Int maxSpotCount = 0
+        Int total_reads = 0
+        Int total_bases = 0
 
         # environment
         String netseq_docker = 'rdshear/bbtools'
         Int preemptible = 1
-        # TODO...calculate it!
-        String memory = "8G"
-        Int threads = 8
+        String memory = "12 GB"
+        Int threads = 4
     }
 
-
+    Int lclmem = ceil((total_reads * 500 + total_bases) / 1000000000.0) + 2
 
     call Dedup {
         input:
-            Infile = inputFastQ,
+            Infile = Infile,
 #            maxSpotCount = maxSpotCount,
 
             threads = threads,
             docker = netseq_docker,
-            memory = memory,
+            # per bbtools documentation, we need reads * 500 + total bases of memory
+            memory = if total_bases + total_reads > 0 then "~{lclmem} GB" else memory,
             preemptible = preemptible
     }
 
@@ -57,7 +58,7 @@ task Dedup {
         File Infile
 #        Int maxSpotCount
 
-        Int threads = 8
+        Int threads = 4
         String docker
         Int preemptible
         String memory

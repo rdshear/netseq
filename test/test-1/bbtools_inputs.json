@@ -1,3 +1,3 @@
 {
-  "dedup.inputFastQ": "/Users/robertshear/Downloads/test-1.fastq.gz"
+  "dedup.Infile": "https://raw.githubusercontent.com/rdshear/netseq/main/test/test-1/test-1.fastq.gz"
 }
