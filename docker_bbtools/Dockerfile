@@ -14,8 +14,7 @@ LABEL description="BBTools from JGI DOE"
 WORKDIR /root
 
 
-RUN apt-get update && \
-    apt-get install --yes wget default-jre
+RUN apt-get update && apt-get install --yes wget default-jre && apt-get clean
 
 RUN wget -O BBMap.tar.gz https://sourceforge.net/projects/bbmap/files/BBMap_38.94.tar.gz
 RUN tar -xzf BBMap.tar.gz
