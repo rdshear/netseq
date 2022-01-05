@@ -30,21 +30,19 @@ parameter_meta {
         # environment
         String netseq_docker = 'rdshear/bbtools'
         Int preemptible = 1
-        String memory = "12 GB"
         Int threads = 4
     }
-
-    Int lclmem = ceil((total_reads * 500 + total_bases) / 1000000000.0) + 2
 
     call Dedup {
         input:
             Infile = Infile,
 #            maxSpotCount = maxSpotCount,
+            total_reads = total_reads,
+            total_bases = total_bases,
             sampleName = sampleName,
             threads = threads,
             docker = netseq_docker,
             # per bbtools documentation, we need reads * 500 + total bases of memory
-            memory = if total_bases + total_reads > 0 then "~{lclmem} GB" else memory,
             preemptible = preemptible
     }
 
@@ -58,20 +56,27 @@ task Dedup {
     input {
         File Infile
 #        Int maxSpotCount
+        Float total_reads = 0
+        Float total_bases = 0
         String sampleName
         Int threads = 4
         String docker
         Int preemptible
-        String memory
     }
+
+    # memory required for bbtools dedupe (per documentation)
+    Float bb_memory = if total_reads + total_bases == 0 then 2000000000 else total_reads * 500.0 + total_bases
+
+    String java_memory = ceil(bb_memory / 1000000.0) + "m"
+    String docker_memory = ceil(bb_memory / 0.85 / 1000000000) + 2 + " GB"
 
     String outfileName = "~{sampleName}.deduped.fastq.gz"
     String logfileName = "~{sampleName}.dedup.log"
 
     command <<<
         set -e
-        echo 'calc memory=~{memory}'
-        . /root/bbmap/dedupe.sh -eoom ac=f in=~{Infile} out=~{outfileName} 2> ~{logfileName}
+        echo 'calc java memory=~{java_memory} docker memory=~{docker_memory}'
+        . /root/bbmap/dedupe.sh -Xmx~{java_memory} -eoom ac=f in=~{Infile} out=~{outfileName} 2> ~{logfileName}
     >>>
 
     output {
@@ -81,7 +86,7 @@ task Dedup {
 
     runtime {
         docker: docker
-        memory: memory
+        memory: docker_memory
         cpu: threads
         disks: "local-disk 25 SSD"
         preemptible: preemptible

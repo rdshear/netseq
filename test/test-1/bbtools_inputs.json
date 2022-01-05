@@ -1,3 +1,5 @@
 {
-  "dedup.Infile": "https://raw.githubusercontent.com/rdshear/netseq/main/test/test-1/test-1.fastq.gz"
+  "dedup_wf.Infile": "https://raw.githubusercontent.com/rdshear/netseq/bbtool/test/test-1/test-1.fastq.gz",
+  "dedup_wf.sampleName": "test1"
+  
 }
