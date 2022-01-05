@@ -93,11 +93,8 @@ parameter_meta {
         File output_bam = AlignReads.BamFileDeduped
         File bedgraph_pos = AlignReads.CoverageBedgraph_Pos
         File bedgraph_neg = AlignReads.CoverageBedgraph_Neg
-
-        # TODO report dedup results log
-        Array[File] logs = [AlignReads.star_log,
-                            AlignReads.star_log_std,
-                            AlignReads.star_log_final]
+        File? dedup_log = dedupeResult.Log
+        File alignment_log = AlignReads.star_log_final
     }
 }
 
@@ -120,9 +117,7 @@ task AlignReads {
         String memory
     }
 
-    String bamResultName = "~{sampleName}.aligned.bam"
     String bamDedupName = "~{sampleName}.bam"
-
 
     command <<<
         set -e

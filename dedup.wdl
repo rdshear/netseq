@@ -50,6 +50,7 @@ parameter_meta {
 
     output {
         File output_fastq = Dedup.FastqDeduped
+        File Log = Dedup.Log
     }
 }
 
@@ -70,8 +71,7 @@ task Dedup {
     command <<<
         set -e
         echo 'calc memory=~{memory}'
-        . /root/bbmap/dedupe.sh -eoom ac=f in=~{Infile} out=~{outfileName}
-        cp ~{stderr()} ~{logfileName}
+        . /root/bbmap/dedupe.sh -eoom ac=f in=~{Infile} out=~{outfileName} 2> ~{logfileName}
     >>>
 
     output {
