@@ -1,6 +1,6 @@
 version 1.0
 
-workflow dedup {
+workflow dedup_wf {
         meta {
         author: "Robert D. Shear"
         email:  "rshear@gmail.com"
@@ -25,6 +25,7 @@ parameter_meta {
 #        Int maxSpotCount = 0
         Float total_reads = 0
         Float total_bases = 0
+        String sampleName
 
         # environment
         String netseq_docker = 'rdshear/bbtools'
@@ -39,7 +40,7 @@ parameter_meta {
         input:
             Infile = Infile,
 #            maxSpotCount = maxSpotCount,
-
+            sampleName = sampleName,
             threads = threads,
             docker = netseq_docker,
             # per bbtools documentation, we need reads * 500 + total bases of memory
@@ -49,7 +50,6 @@ parameter_meta {
 
     output {
         File output_fastq = Dedup.FastqDeduped
-        # TODO: Add log fle
     }
 }
 
@@ -57,22 +57,26 @@ task Dedup {
     input {
         File Infile
 #        Int maxSpotCount
-
+        String sampleName
         Int threads = 4
         String docker
         Int preemptible
         String memory
     }
 
+    String outfileName = "~{sampleName}.deduped.fastq.gz"
+    String logfileName = "~{sampleName}.dedup.log"
 
     command <<<
         set -e
         echo 'calc memory=~{memory}'
-        . /root/bbmap/dedupe.sh -eoom ac=f in=~{Infile} out="todo.fastq.gz"
+        . /root/bbmap/dedupe.sh -eoom ac=f in=~{Infile} out=~{outfileName}
+        cp ~{stderr()} ~{logfileName}
     >>>
 
     output {
-        File FastqDeduped = "todo.fastq.gz"
+        File FastqDeduped = outfileName
+        File Log = logfileName
     }
 
     runtime {

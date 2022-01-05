@@ -1,5 +1,7 @@
 version 1.0
 
+import "dedup.wdl" as dedup
+
 workflow netseq {
         meta {
         author: "Robert D. Shear"
@@ -43,6 +45,9 @@ parameter_meta {
 
         # Unprocessed reads
         File inputFastQ
+        Float total_reads = 0
+        Float total_bases = 0
+
         Int maxSpotCount = 0
         String sampleName = basename(basename(basename(inputFastQ, ".1"), ".gz"), ".fastq")
         String adapterSequence = "ATCTCGTATGCCGTCTTCTGCTTG"
@@ -56,11 +61,19 @@ parameter_meta {
         Int threads = 8
     }
 
-
+    if (umiWidth > 0) {
+        call dedup.dedup_wf as dedupeResult {
+            input:
+                Infile = inputFastQ,
+                sampleName = sampleName,
+                total_reads = total_reads,
+                total_bases = total_bases
+        }
+    }
 
     call AlignReads {
         input:
-            Infile = inputFastQ,
+            Infile = if umiWidth > 0 then dedupeResult.output_fastq else inputFastQ,
             maxSpotCount = maxSpotCount,
             refFasta = refFasta,
             sampleName = sampleName,
@@ -81,16 +94,16 @@ parameter_meta {
         File bedgraph_pos = AlignReads.CoverageBedgraph_Pos
         File bedgraph_neg = AlignReads.CoverageBedgraph_Neg
 
+        # TODO report dedup results log
         Array[File] logs = [AlignReads.star_log,
-                                    AlignReads.star_log_std,
-                                    AlignReads.star_log_final,
-                                    AlignReads.DedupLogs]
+                            AlignReads.star_log_std,
+                            AlignReads.star_log_final]
     }
 }
 
 task AlignReads {
     input {
-        File Infile
+        File? Infile
         Int maxSpotCount
         String refFasta
         String genomeName
@@ -163,25 +176,7 @@ task AlignReads {
             --clip3pNbases 0 \
             --clip5pNbases ~{umiWidth}  \
             --alignIntronMax 1 \
-        | samtools sort >  ~{bamResultName}
-
-        if [[ ~{umiWidth} -eq 0 ]]
-        then
-            touch ~{sampleName}.dedup.log
-        else
-            samtools index ~{bamResultName}
-            micromamba activate umi_tools
-
-            umi_tools dedup -I ~{bamResultName} \
-                --output-stats=~{sampleName}.dedup.stats.log \
-                --log=~{sampleName}.dedup.log \
-                -S ~{bamDedupName} \
-                --method unique \
-                --umi-tag=~{umi_tag} \
-                --extract-umi-method=tag \
-                --random-seed=20211221
-            micromamba activate base
-        fi
+        | samtools sort >  ~{bamDedupName}
 
         bedtools genomecov -5 -bg -strand - -ibam ~{bamDedupName} | bgzip > ~{sampleName}.pos.bedgraph.gz
         bedtools genomecov -5 -bg -strand + -ibam ~{bamDedupName} | bgzip > ~{sampleName}.neg.bedgraph.gz
@@ -194,7 +189,6 @@ task AlignReads {
         File BamFileDeduped = bamDedupName
         File CoverageBedgraph_Pos = '~{sampleName}.pos.bedgraph.gz'
         File CoverageBedgraph_Neg = '~{sampleName}.neg.bedgraph.gz'
-        File DedupLogs = '~{sampleName}.dedup.log'
     }
 
     runtime {
