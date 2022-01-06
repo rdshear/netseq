@@ -15,7 +15,7 @@ parameter_meta {
 
         # STAR alignment parameters
         inputFastQ: "Illumina Read file, FASTQ format"
-        maxSpotCount: "If not zero, then maximum number of fastQ record to read"
+        maxReadCount: "If not zero, then maximum number of fastQ record to read"
         sampleName: "Sample name. If not specified, taken as base name of fastq input file"
         adapterSequence: "Adapter sequence to trim from 3' end"
         umiWidth: "Number of bases in UMI. Defaults to 6. If zero, no UMI deduplication occurs"
@@ -48,7 +48,7 @@ parameter_meta {
         Float total_reads = 0
         Float total_bases = 0
 
-        Int maxSpotCount = 0
+        Int maxReadCount = 0
         String sampleName = basename(basename(basename(inputFastQ, ".1"), ".gz"), ".fastq")
         String adapterSequence = "ATCTCGTATGCCGTCTTCTGCTTG"
         Int umiWidth = 6
@@ -74,7 +74,7 @@ parameter_meta {
     call AlignReads {
         input:
             Infile = if umiWidth > 0 then dedupeResult.output_fastq else inputFastQ,
-            maxSpotCount = maxSpotCount,
+            maxReadCount = maxReadCount,
             refFasta = refFasta,
             sampleName = sampleName,
             genomeName = genomeName,
@@ -101,7 +101,7 @@ parameter_meta {
 task AlignReads {
     input {
         File? Infile
-        Int maxSpotCount
+        Int maxReadCount
         String refFasta
         String genomeName
         String sampleName
@@ -142,9 +142,9 @@ task AlignReads {
         rmdir "$tempStarDir"
 
         samtools import -0 ~{Infile} \
-        | if [[ ~{maxSpotCount} -ne 0 ]]
+        | if [[ ~{maxReadCount} -ne 0 ]]
             then 
-                head -n ~{maxSpotCount} 
+                head -n ~{maxReadCount} 
             else
                 cat
         fi \

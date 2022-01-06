@@ -7,7 +7,7 @@ workflow dedup_wf {
     }
 parameter_meta {
         Infile: "Illumina Read file, FASTQ or sam/bam format"
-#        maxSpotCount: "If not zero, then maximum number of fastQ record to read"
+#        maxReadCount: "If not zero, then maximum number of fastQ record to read"
 
         #Outputs
 
@@ -22,7 +22,7 @@ parameter_meta {
     input {
 
         File Infile
-#        Int maxSpotCount = 0
+#        Int maxReadCount = 0
         Float total_reads = 0
         Float total_bases = 0
         String sampleName
@@ -36,7 +36,7 @@ parameter_meta {
     call Dedup {
         input:
             Infile = Infile,
-#            maxSpotCount = maxSpotCount,
+#            maxReadCount = maxReadCount,
             total_reads = total_reads,
             total_bases = total_bases,
             sampleName = sampleName,
@@ -55,7 +55,7 @@ parameter_meta {
 task Dedup {
     input {
         File Infile
-#        Int maxSpotCount
+#        Int maxReadCount
         Float total_reads = 0
         Float total_bases = 0
         String sampleName
