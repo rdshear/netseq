@@ -7,7 +7,6 @@ workflow dedup_wf {
     }
 parameter_meta {
         Infile: "Illumina Read file, FASTQ or sam/bam format"
-#        maxReadCount: "If not zero, then maximum number of fastQ record to read"
 
         #Outputs
 
@@ -22,7 +21,6 @@ parameter_meta {
     input {
 
         File Infile
-#        Int maxReadCount = 0
         Float total_reads = 0
         Float total_bases = 0
         String sampleName
@@ -36,13 +34,11 @@ parameter_meta {
     call Dedup {
         input:
             Infile = Infile,
-#            maxReadCount = maxReadCount,
             total_reads = total_reads,
             total_bases = total_bases,
             sampleName = sampleName,
             threads = threads,
             docker = netseq_docker,
-            # per bbtools documentation, we need reads * 500 + total bases of memory
             preemptible = preemptible
     }
 
@@ -55,7 +51,6 @@ parameter_meta {
 task Dedup {
     input {
         File Infile
-#        Int maxReadCount
         Float total_reads = 0
         Float total_bases = 0
         String sampleName
@@ -65,18 +60,25 @@ task Dedup {
     }
 
     # memory required for bbtools dedupe (per documentation)
-    Float bb_memory = if total_reads + total_bases == 0 then 2000000000 else total_reads * 500.0 + total_bases
+    Float MiB = 1048576
+    Float GiB = 1073741824
+    Float bb_memory = if total_reads + total_bases == 0 then 2000000000 else (total_reads * 500.0 + total_bases) * 1.15
 
-    String java_memory = ceil(bb_memory / 1000000.0) + "m"
-    String docker_memory = ceil(bb_memory / 0.85 / 1000000000) + 2 + " GB"
+    String java_heap_memory = ceil(bb_memory / MiB + 20) + "m"
+    String docker_memory = ceil(bb_memory / GiB) + 4 + " GB"
 
     String outfileName = "~{sampleName}.deduped.fastq.gz"
     String logfileName = "~{sampleName}.dedup.log"
 
     command <<<
         set -e
-        echo 'calc java memory=~{java_memory} docker memory=~{docker_memory}'
-        . /root/bbmap/dedupe.sh -Xmx~{java_memory} -eoom ac=f in=~{Infile} out=~{outfileName} 2> ~{logfileName}
+        echo 'calc java memory=~{java_heap_memory} docker memory=~{docker_memory}'
+        echo 'bb_memory ~{bb_memory}'
+        echo 'total_bases ~{total_bases}'
+        echo 'bb_memory ~{bb_memory}'
+        echo 'docker_memory ~{docker_memory}'
+        echo 'java_heap_memory ~{java_heap_memory}'
+        /root/bbmap/dedupe.sh -Xmx~{java_heap_memory} -Xms~{java_heap_memory} -eoom ac=f in=~{Infile} out=~{outfileName} 2> ~{logfileName}
     >>>
 
     output {
