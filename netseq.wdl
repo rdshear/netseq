@@ -1,6 +1,7 @@
 version 1.0
 
 import "dedup.wdl" as dedup
+import "sraRead.wdl" as sraRead_wf
 
 workflow netseq {
         meta {
@@ -44,12 +45,13 @@ parameter_meta {
         Int OutFilterMultiMax = 10 # Default to dropping reads with more than 10 alignments
 
         # Unprocessed reads
-        File inputFastQ
+        File? inputFastQ
+        String? SraRunId
         Float total_reads = 0
         Float total_bases = 0
 
         Int maxReadCount = 0
-        String sampleName = basename(basename(basename(inputFastQ, ".1"), ".gz"), ".fastq")
+        String sampleName = basename(basename(select_first([inputFastQ, SraRunId]), ".gz"), ".fastq")
         String adapterSequence = "ATCTCGTATGCCGTCTTCTGCTTG"
         Int umiWidth = 6
         String umi_tag = "RX"
@@ -61,10 +63,20 @@ parameter_meta {
         Int threads = 8
     }
 
+    if (!defined(inputFastQ)) {
+        call sraRead_wf.sraRead {
+            input: 
+                sraId = select_first([SraRunId]),
+                maxReadCount = maxReadCount,
+                OutputFileName = sampleName + ".fastq.gz"
+        }
+    }
+
+
     if (umiWidth > 0) {
         call dedup.dedup_wf as dedupeResult {
             input:
-                Infile = inputFastQ,
+                Infile = select_first([inputFastQ, sraRead.OutputFile]),
                 sampleName = sampleName,
                 total_reads = total_reads,
                 total_bases = total_bases
@@ -74,7 +86,6 @@ parameter_meta {
     call AlignReads {
         input:
             Infile = if umiWidth > 0 then dedupeResult.output_fastq else inputFastQ,
-            maxReadCount = maxReadCount,
             refFasta = refFasta,
             sampleName = sampleName,
             genomeName = genomeName,
@@ -101,7 +112,7 @@ parameter_meta {
 task AlignReads {
     input {
         File? Infile
-        Int maxReadCount
+        Int maxReadCount = 0
         String refFasta
         String genomeName
         String sampleName

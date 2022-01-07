@@ -4,7 +4,7 @@ task sraRead {
     input {
         String sraId
         Boolean resultAsUbam = false
-        Int? MaxReadCount
+        Int? maxReadCount
         String OutputFileName
         
         
@@ -17,9 +17,9 @@ task sraRead {
 
 
     String sraCommand = if resultAsUbam then 
-                            (if defined(MaxReadCount) then "sam-dump ~{sraId} | head -n ~{MaxReadCount} | gzip -c"
+                            (if defined(maxReadCount) then "sam-dump ~{sraId} | head -n ~{maxReadCount} | gzip -c"
                                 else "sam-dump --gzip ~{sraId}")
-                        else ("fastq-dump --stdout " + (if defined(MaxReadCount) then "-X " + MaxReadCount + " " else "")
+                        else ("fastq-dump --stdout " + (if defined(maxReadCount) then "-X " + maxReadCount + " " else "")
                                     + sraId + " | gzip -c")
 
     command <<<
@@ -45,14 +45,14 @@ workflow sraReadWorkflow {
         String sraId
         String OutputFileName
         Boolean resultAsUbam = false
-        Int? MaxReadCount
+        Int? maxReadCount
     }
     call sraRead {
         input:
             sraId = sraId,
             OutputFileName = OutputFileName,
             resultAsUbam = resultAsUbam,
-            MaxReadCount = MaxReadCount
+            maxReadCount = maxReadCount
     }
 
     output {
