@@ -26,42 +26,37 @@ parameter_meta {
         String sampleName
 
         # environment
-        String netseq_docker = 'rdshear/bbtools'
-        Int preemptible = 1
-        Int threads = 4
     }
 
-    call Dedup {
+    call dedup {
         input:
             Infile = Infile,
             total_reads = total_reads,
             total_bases = total_bases,
             sampleName = sampleName,
-            threads = threads,
-            docker = netseq_docker,
-            preemptible = preemptible
     }
 
     output {
-        File output_fastq = Dedup.FastqDeduped
-        File Log = Dedup.Log
+        File output_fastq = dedup.FastqDeduped
+        File Log = dedup.Log
     }
 }
 
-task Dedup {
+task dedup {
     input {
         File Infile
+        String sampleName
         Float total_reads = 0
         Float total_bases = 0
-        String sampleName
+        String docker = 'rdshear/bbtools'
+        Int preemptible = 1
         Int threads = 4
-        String docker
-        Int preemptible
     }
 
     # memory required for bbtools dedupe (per documentation)
-    Float MiB = 1048576
-    Float GiB = 1073741824
+    Float MiB = 1048576         # const 2^20
+    Float GiB = 1073741824      # const 2^30
+    # todo estimate required memory from file size
     Float bb_memory = if total_reads + total_bases == 0 then 2000000000 else (total_reads * 500.0 + total_bases) * 1.15
 
     String java_heap_memory = ceil(bb_memory / MiB + 20) + "m"

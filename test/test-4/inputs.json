@@ -1,0 +1,8 @@
+{
+  "netseq.threads": 1,
+  "netseq.refFasta": "https://raw.githubusercontent.com/rdshear/netseq/main/test/sacCer3.fa", 
+  "netseq.sraRunId": "SRR12840069",
+  "netseq.total_bases": 1000000,
+  "netseq.total_reads": 10000,
+  "netseq.maxReadCount": 10000
+}

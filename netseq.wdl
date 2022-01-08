@@ -1,6 +1,6 @@
 version 1.0
 
-import "dedup.wdl" as dedup
+import "dedup.wdl" as dedup_wf
 import "sraRead.wdl" as sraRead_wf
 
 workflow netseq {
@@ -16,7 +16,7 @@ parameter_meta {
 
         # STAR alignment parameters
         inputFastQ: "Illumina Read file, FASTQ format"
-        maxReadCount: "If not zero, then maximum number of fastQ record to read"
+        maxReadCount: "If defined, then maximum number of fastQ record to read"
         sampleName: "Sample name. If not specified, taken as base name of fastq input file"
         adapterSequence: "Adapter sequence to trim from 3' end"
         umiWidth: "Number of bases in UMI. Defaults to 6. If zero, no UMI deduplication occurs"
@@ -46,12 +46,14 @@ parameter_meta {
 
         # Unprocessed reads
         File? inputFastQ
-        String? SraRunId
+        String? sraRunId
         Float total_reads = 0
         Float total_bases = 0
 
-        Int maxReadCount = 0
-        String sampleName = basename(basename(select_first([inputFastQ, SraRunId]), ".gz"), ".fastq")
+        Int? maxReadCount
+#        String sampleName = if !defined(inputFastQ) then sraRunId else basename(basename(select_first([inputFastQ]), ".gz"), ".fastq")
+        String inputFileFullName = select_first([inputFastQ, sraRunId, 'default'])
+        String sampleName = basename(basename(inputFileFullName, ".gz"), ".fastq")
         String adapterSequence = "ATCTCGTATGCCGTCTTCTGCTTG"
         Int umiWidth = 6
         String umi_tag = "RX"
@@ -64,19 +66,18 @@ parameter_meta {
     }
 
     if (!defined(inputFastQ)) {
-        call sraRead_wf.sraRead {
+        call sraRead_wf.sraRead as sra {
             input: 
-                sraId = select_first([SraRunId]),
+                sraId = select_first([sraRunId]),
                 maxReadCount = maxReadCount,
                 OutputFileName = sampleName + ".fastq.gz"
         }
     }
 
-
     if (umiWidth > 0) {
-        call dedup.dedup_wf as dedupeResult {
+        call dedup_wf.dedup as dedupeResult {
             input:
-                Infile = select_first([inputFastQ, sraRead.OutputFile]),
+                Infile = select_first([inputFastQ, sra.OutputFile]),
                 sampleName = sampleName,
                 total_reads = total_reads,
                 total_bases = total_bases
@@ -85,7 +86,7 @@ parameter_meta {
 
     call AlignReads {
         input:
-            Infile = if umiWidth > 0 then dedupeResult.output_fastq else inputFastQ,
+            Infile = select_first([dedupeResult.FastqDeduped, inputFastQ]),
             refFasta = refFasta,
             sampleName = sampleName,
             genomeName = genomeName,
