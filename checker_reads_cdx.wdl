@@ -1,10 +1,10 @@
 version 1.0
 
-import "sraRead.wdl" as wf
+import "reads_cdx.wdl" as wf
 
-workflow checker_sraRead {
+workflow checker_reads_cdx {
         meta {
-        description: "Unit tests for sraRead.wdl"
+        description: "Unit tests for reads_cdx.wdl"
         author: "Robert D. Shear"
         email:  "rshear@gmail.com"
     }
@@ -15,27 +15,27 @@ workflow checker_sraRead {
     }
 
 
-    call wf.sraRead as fq_all {
+    call wf.reads_cdx as fq_all {
         input:
             sraId = sraId,
             OutputFileName = "SRR_full.fastq.gz"
     }
 
-    call wf.sraRead as fq_100 {
+    call wf.reads_cdx as fq_100 {
         input:
             sraId = sraId,
             OutputFileName = "SRR_100.fastq.gz",
             MaxReadCount = 100
     }
 
-    call wf.sraRead as bam_all {
+    call wf.reads_cdx as bam_all {
         input:
             sraId = sraId,
             resultAsUbam = true,
             OutputFileName = "SRR_full.bam",
     }
 
-    call wf.sraRead as bam_100 {
+    call wf.reads_cdx as bam_100 {
         input:
             sraId = sraId,
             resultAsUbam = true,
@@ -44,7 +44,7 @@ workflow checker_sraRead {
     }
 
 
-    call md5_sraReadfilecheck {
+    call md5_reads_cdxfilecheck {
         input:
             sraFiles = [fq_all.OutputFile, fq_100.OutputFile, bam_all.OutputFile, bam_100.OutputFile],
             truth_md5 = truth_md5
@@ -52,7 +52,7 @@ workflow checker_sraRead {
     
 }
 
-task md5_sraReadfilecheck {
+task md5_reads_cdxfilecheck {
     input {
         Array[File] sraFiles
         File truth_md5

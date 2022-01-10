@@ -1,6 +1,6 @@
 version 1.0
 
-task sraRead {
+task reads_cdx {
     input {
         String sraId
         Boolean resultAsUbam = false
@@ -40,14 +40,14 @@ task sraRead {
     }
 }
 
-workflow sraReadWorkflow {
+workflow reads_cdxWorkflow {
     input {
         String sraId
         String OutputFileName
         Boolean resultAsUbam = false
         Int? maxReadCount
     }
-    call sraRead {
+    call reads_cdx {
         input:
             sraId = sraId,
             OutputFileName = OutputFileName,
@@ -56,6 +56,6 @@ workflow sraReadWorkflow {
     }
 
     output {
-        File OutputFile = sraRead.OutputFile
+        File OutputFile = reads_cdx.OutputFile
     }
 }

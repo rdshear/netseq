@@ -1,7 +1,7 @@
 version 1.0
 
 import "dedup.wdl" as dedup_wf
-import "sraRead.wdl" as sraRead_wf
+import "reads_cdx.wdl" as reads_cdx_wf
 
 workflow netseq {
         meta {
@@ -66,7 +66,7 @@ parameter_meta {
     }
 
     if (!defined(inputFastQ)) {
-        call sraRead_wf.sraRead as sra {
+        call reads_cdx_wf.reads_cdx as sra {
             input: 
                 sraId = select_first([sraRunId]),
                 maxReadCount = maxReadCount,
