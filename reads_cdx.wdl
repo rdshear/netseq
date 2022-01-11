@@ -2,17 +2,17 @@ version 1.0
 
 task reads_cdx {
     input {
-        String sraId
-        Boolean resultAsUbam = false
+        String? sraId
+        File? inputFastQ
         Int? maxReadCount
         String OutputFileName
         
         
         # technical
-        Int threads = 2
+        Int threads = 4
         String docker = "rdshear/sra-tools"
         Int preemptible = 1
-        String memory = "2G"
+        String memory = "G"
     }
 
 

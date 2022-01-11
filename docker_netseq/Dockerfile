@@ -6,14 +6,15 @@
 FROM mambaorg/micromamba:0.18.2
 LABEL description="Container for NET-seq pipeline"
 
-# seperate environment for umi_tools due to prerequeisite conflicts
 RUN micromamba install -y -n base -c bioconda -c conda-forge \
-        bedtools htslib=1.13 openssl=1.1 python=3.9 \
-        samtools=1.13 star=2.7 wget && \
-    micromamba create -y -n umi_tools -c bioconda -c conda-forge umi_tools time && \
+        bedtools fastp htslib openssl samtools sra-tools star wget && \
     micromamba clean --all --yes
 
 WORKDIR /home/micromamba
-COPY --chown=micromamba:micromamba scripts/ scripts/
+
+RUN vdb-config --restore-defaults && \
+    echo '/LIBS/GUID = "$(uuidgen)"' >> $HOME/.ncbi/user-settings.mkfg && \
+    echo '/libs/cloud/report_instance_identity = "true"' >> $HOME/.ncbi/user-settings.mkfg
+
 
 CMD ["/bin/bash"]

@@ -1,8 +1,5 @@
 version 1.0
 
-import "dedup.wdl" as dedup_wf
-import "reads_cdx.wdl" as reads_cdx_wf
-
 workflow netseq {
         meta {
         author: "Robert D. Shear"
@@ -45,15 +42,13 @@ parameter_meta {
         Int OutFilterMultiMax = 10 # Default to dropping reads with more than 10 alignments
 
         # Unprocessed reads
-        File? inputFastQ
+        File inputFastQ
         String? sraRunId
         Float total_reads = 0
         Float total_bases = 0
 
         Int? maxReadCount
-#        String sampleName = if !defined(inputFastQ) then sraRunId else basename(basename(select_first([inputFastQ]), ".gz"), ".fastq")
-        String inputFileFullName = select_first([inputFastQ, sraRunId, 'default'])
-        String sampleName = basename(basename(inputFileFullName, ".gz"), ".fastq")
+        String sampleName = basename(basename(select_first([inputFastQ, sraRunId, 'default']), ".gz"), ".fastq")
         String adapterSequence = "ATCTCGTATGCCGTCTTCTGCTTG"
         Int umiWidth = 6
         String umi_tag = "RX"
@@ -65,28 +60,9 @@ parameter_meta {
         Int threads = 8
     }
 
-    if (!defined(inputFastQ)) {
-        call reads_cdx_wf.reads_cdx as sra {
-            input: 
-                sraId = select_first([sraRunId]),
-                maxReadCount = maxReadCount,
-                OutputFileName = sampleName + ".fastq.gz"
-        }
-    }
-
-    if (umiWidth > 0) {
-        call dedup_wf.dedup as dedupeResult {
-            input:
-                Infile = select_first([inputFastQ, sra.OutputFile]),
-                sampleName = sampleName,
-                total_reads = total_reads,
-                total_bases = total_bases
-        }
-    }
-
     call AlignReads {
         input:
-            Infile = select_first([dedupeResult.FastqDeduped, inputFastQ]),
+            Infile = inputFastQ,
             refFasta = refFasta,
             sampleName = sampleName,
             genomeName = genomeName,
@@ -102,17 +78,16 @@ parameter_meta {
     }
 
     output {
-        File output_bam = AlignReads.BamFileDeduped
+        File output_bam = AlignReads.BamFile
         File bedgraph_pos = AlignReads.CoverageBedgraph_Pos
         File bedgraph_neg = AlignReads.CoverageBedgraph_Neg
-        File? dedup_log = dedupeResult.Log
         File alignment_log = AlignReads.star_log_final
     }
 }
 
 task AlignReads {
     input {
-        File? Infile
+        File Infile
         Int maxReadCount = 0
         String refFasta
         String genomeName
@@ -129,7 +104,7 @@ task AlignReads {
         String memory
     }
 
-    String bamDedupName = "~{sampleName}.bam"
+    String bamFileName = "~{sampleName}.bam"
 
     command <<<
         set -e
@@ -148,31 +123,17 @@ task AlignReads {
         --genomeFastaFiles ./~{genomeName}.fa \
         --genomeSAindexNbases 10
  
-        # force the temp directory to the container's disks
+        # force the temp directory to the container's local disks
         tempStarDir=$(mktemp -d)
         # star wants to create the directory itself
         rmdir "$tempStarDir"
-
-        samtools import -0 ~{Infile} \
-        | if [[ ~{maxReadCount} -ne 0 ]]
-            then 
-                head -n ~{maxReadCount} 
-            else
-                cat
-        fi \
-        | if [[ ~{umiWidth} -ne 0 ]]
-            then
-                python3 /home/micromamba/scripts/ExtractUmi.py \
-                    /dev/stdin /dev/stdout ~{umiWidth} ~{umi_tag} 
-            else
-                cat
-        fi \
-        | STAR --runMode alignReads \
+        
+        fastp -i ~{Infile} -o ~{sampleName}.fastq.gz -D --dup_calc_accuracy 4 --umi --umi_len ~{umiWidth} --umi_loc per_read \
+            --umi_prefix umi --html ~{sampleName}.html --adapter_sequence ~{adapterSequence}
+        STAR --runMode alignReads \
             --genomeDir star_work \
             --runThreadN ~{threads} \
-            --readFilesIn /dev/stdin \
-            --readFilesCommand samtools view \
-            --readFilesType SAM SE \
+            --readFilesIn /dev/stdin  \
             --outTmpDir "$tempStarDir" \
             --outStd SAM \
             --outFileNamePrefix ~{sampleName}. \
@@ -183,17 +144,16 @@ task AlignReads {
             --clip3pNbases 0 \
             --clip5pNbases ~{umiWidth}  \
             --alignIntronMax 1 \
-        | samtools sort >  ~{bamDedupName}
+        | samtools sort >  ~{bamFileName}
 
-        bedtools genomecov -5 -bg -strand - -ibam ~{bamDedupName} | bgzip > ~{sampleName}.pos.bedgraph.gz
-        bedtools genomecov -5 -bg -strand + -ibam ~{bamDedupName} | bgzip > ~{sampleName}.neg.bedgraph.gz
+        bedtools genomecov -5 -bg -strand - -ibam ~{bamFileName} | bgzip > ~{sampleName}.pos.bedgraph.gz
+        bedtools genomecov -5 -bg -strand + -ibam ~{bamFileName} | bgzip > ~{sampleName}.neg.bedgraph.gz
     >>>
 
     output {
         File star_log_final = "~{sampleName}.Log.final.out"
-        File star_log = "~{sampleName}.Log.out"
-        File star_log_std =  "~{sampleName}.Log.std.out"
-        File BamFileDeduped = bamDedupName
+        File fastp_report = "~{sampleName}.html"
+        File BamFile = bamFileName
         File CoverageBedgraph_Pos = '~{sampleName}.pos.bedgraph.gz'
         File CoverageBedgraph_Neg = '~{sampleName}.neg.bedgraph.gz'
     }
