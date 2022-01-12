@@ -2,5 +2,5 @@
   "netseq.threads": 1,
   "netseq.refFasta": "https://raw.githubusercontent.com/rdshear/netseq/main/test/sacCer3.fa", 
   "netseq.inputFastQ": "https://raw.githubusercontent.com/rdshear/netseq/main/test/test-1/test-1.fastq.gz",
-  "netseq.maxReadCount": 37
+  "netseq.maxReadCount": 1000
 }

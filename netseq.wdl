@@ -157,6 +157,7 @@ task AlignReads {
             --clip3pAdapterSeq ~{adapterSequence} \
             --clip3pNbases 0 \
             --clip5pNbases ~{umiWidth}  \
+            --limitBAMsortRAM 3221225472 \
             --alignIntronMax 1
         
         mv ~{sampleName}.Aligned.sortedByCoord.out.bam ~{bamFileName}
