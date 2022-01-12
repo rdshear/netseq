@@ -6,8 +6,9 @@
 FROM mambaorg/micromamba:0.18.2
 LABEL description="Container for NET-seq pipeline"
 
+# TODO Remove star 
 RUN micromamba install -y -n base -c bioconda -c conda-forge \
-        bedtools fastp htslib openssl samtools sra-tools star wget && \
+        bedtools bwa fastp htslib openssl samtools sra-tools star wget && \
     micromamba clean --all --yes
 
 WORKDIR /home/micromamba

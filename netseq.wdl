@@ -19,8 +19,6 @@ parameter_meta {
         # STAR alignment parameters
         adapterSequence: "Adapter sequence to trim from 3' end"
         umiWidth: "Number of bases in UMI. Defaults to 6. If zero, no UMI deduplication occurs"
-        outSAMmultNmax: "The number of alignments returned for each read. If 1, then no multimmappers are returned."
-        OutFilterMultiMax: "If a read has multimappers in excess of this paramter, then the read is disreagarded. Defaults"
 
         #Outputs
 
@@ -39,8 +37,6 @@ parameter_meta {
         # Genome source for STAR
         String refFasta
         String genomeName = "sacCer3"
-        Int outSAMmultNmax = 1     # Default to outputting primary alignment only. (Multimap count still available)
-        Int OutFilterMultiMax = 10 # Default to dropping reads with more than 10 alignments
 
         # Unprocessed reads
         File? inputFastQ
@@ -66,8 +62,6 @@ parameter_meta {
             sampleName = sampleName,
             genomeName = genomeName,
             maxReadCount = maxReadCount,
-            outSAMmultNmax = outSAMmultNmax,
-            OutFilterMultiMax = OutFilterMultiMax,
             adapterSequence = adapterSequence,
             umiWidth = umiWidth,
             threads = threads,
@@ -80,7 +74,8 @@ parameter_meta {
         File output_bam = AlignReads.BamFile
         File bedgraph_pos = AlignReads.CoverageBedgraph_Pos
         File bedgraph_neg = AlignReads.CoverageBedgraph_Neg
-        File alignment_log = AlignReads.star_log_final
+        File fastp_json = AlignReads.fastp_report_json
+        File fastp_report_html = AlignReads.fastp_report_html
     }
 }
 
@@ -92,8 +87,6 @@ task AlignReads {
         String refFasta
         String genomeName
         String sampleName
-        Int outSAMmultNmax
-        Int OutFilterMultiMax
         String adapterSequence
         Int umiWidth
 
@@ -115,61 +108,33 @@ task AlignReads {
         . /bin/entrypoint.sh
 
         wget --quiet ~{refFasta} -O ~{genomeName}.fa
+        bwa index ~{genomeName}.fa
 
-        samtools faidx ./~{genomeName}.fa
-
-        STAR \
-        --runMode genomeGenerate \
-        --runThreadN ~{threads} \
-        --genomeDir star_work \
-        --genomeFastaFiles ./~{genomeName}.fa \
-        --genomeSAindexNbases 10
- 
-        # force the temp directory to the container's local disks
-        tempStarDir=$(mktemp -d)
-        # star wants to create the directory itself
-        rmdir "$tempStarDir"
         
         cmd=$(if [[ ~{UseFile} == true ]]
             then echo -n fastp -i ~{Infile} --reads_to_process ~{maxReadCount}
             else echo -n fastq-dump $(if [[ ~{maxReadCount} -gt 0 ]]; then echo -n -X ~{maxReadCount}; fi) --stdout ~{sraRunId} "|" fastp --stdin
             fi)
 
-        cmd=" $cmd --stdout -D --dup_calc_accuracy ~{DupCalcAccuracy} \
+        cmd=" $cmd -o ~{sampleName}.dedup.fastq.gz -D --dup_calc_accuracy ~{DupCalcAccuracy} \
             --adapter_sequence ~{adapterSequence} \
             --umi --umi_len ~{umiWidth} --umi_loc per_read \
             --umi_prefix umi \
-            --html ~{sampleName}.html \
-            --json ~{sampleName}.json "
+            --html ~{sampleName}.fastp.html \
+            --json ~{sampleName}.fastp.json"
 
         echo "Computed fastq pull command: $cmd" 
 
-        eval "$cmd" | STAR --runMode alignReads \
-            --genomeDir star_work \
-            --runThreadN ~{threads} \
-            --readFilesIn /dev/stdin  \
-            --outTmpDir "$tempStarDir" \
-            --outFileNamePrefix ~{sampleName}. \
-            --outSAMtype BAM SortedByCoordinate \
-            --outReadsUnmapped None \
-            --outSAMmultNmax ~{outSAMmultNmax} \
-            --outFilterMultimapNmax ~{OutFilterMultiMax} \
-            --clip3pAdapterSeq ~{adapterSequence} \
-            --clip3pNbases 0 \
-            --clip5pNbases ~{umiWidth}  \
-            --limitBAMsortRAM 3221225472 \
-            --alignIntronMax 1
-        
-        mv ~{sampleName}.Aligned.sortedByCoord.out.bam ~{bamFileName}
+        eval "$cmd" 
+        bwa aln sacCer3.fa ~{sampleName}.dedup.fastq.gz | bwa samse sacCer3.fa - ~{sampleName}.dedup.fastq.gz | samtools sort -O BAM > ~{bamFileName}
 
         bedtools genomecov -5 -bg -strand - -ibam ~{bamFileName} | bgzip > ~{sampleName}.pos.bedgraph.gz
         bedtools genomecov -5 -bg -strand + -ibam ~{bamFileName} | bgzip > ~{sampleName}.neg.bedgraph.gz
     >>>
 
     output {
-        File star_log_final = "~{sampleName}.Log.final.out"
-        File fastp_report_html = "~{sampleName}.html"
-        File fastp_report_json = "~{sampleName}.json"
+        File fastp_report_html = "~{sampleName}.fastp.html"
+        File fastp_report_json = "~{sampleName}.fastp.json"
         File BamFile = bamFileName
         File CoverageBedgraph_Pos = '~{sampleName}.pos.bedgraph.gz'
         File CoverageBedgraph_Neg = '~{sampleName}.neg.bedgraph.gz'
