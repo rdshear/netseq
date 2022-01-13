@@ -4,35 +4,71 @@ import "netseq.wdl" as netseq_wf
 
 workflow checker_netseq {
         meta {
-        description: "Quick check for rdshear/netseq workflow"
+        description: "Checker for rdshear/netseq workflow"
         author: "Robert D. Shear"
         email:  "rshear@gmail.com"
     }
 
     input {
-        String refFasta
-        String sampleName
-        File inputFastQ
+        String srrId = "SRR12840066"
+        Int maxReads = 1000
+        Int limitedReads = 50
         File truth_md5
     }
 
 
-    call netseq_wf.netseq as subject {
+    call getSamples {
         input:
-            refFasta = refFasta,
-            inputFastQ = inputFastQ
+            srrId = srrId,
+            maxReads = maxReads,
+            limitedReads = limitedReads
     }
+    # call netseq_wf.netseq as subject {
+    #     input:
+    #         sampleName = sampleName,
+    #         inputFastQ = inputFastQ
+    # }
 
-    call md5_filecheck {
-        input:
-            sampleName = sampleName,
-            output_bam = subject.output_bam,
-            bedgraph_neg = subject.bedgraph_neg,
-            bedgraph_pos = subject.bedgraph_pos,
-            truth_md5 = truth_md5
-    }
+    # call md5_filecheck {
+    #     input:
+    #         sampleName = sampleName,
+    #         output_bam = subject.output_bam,
+    #         bedgraph_neg = subject.bedgraph_neg,
+    #         bedgraph_pos = subject.bedgraph_pos,
+    #         truth_md5 = truth_md5
+    # }
     
 }
+
+task getSamples {
+    input {
+        String srrId
+        Int maxReads
+        Int limitedReads
+    }
+    command <<<
+        set -e
+
+        # make sure that miniconda is properly initialized whether interactive or not
+        . /bin/entrypoint.sh
+        fastq-dump -X 1000 ~{srrId} --stdout  > testsample.fastq
+        head -n ~{limitedReads*4} testsample.fastq > smallsample.fastq
+        md5sum testsample.fastq smallsample.fastq > test.md5
+        gzip testsample.fastq
+        gzip smallsample.fastq
+    >>>
+    output {
+        File fastqSample = "testsample.fastq.gz"
+        File fastqShortSample = "smallsample.fastq.gz"
+        File testmd5 = "test.md5"
+    }
+    runtime {
+        docker: 'rdshear/netseq'
+    }
+}
+
+
+
 
 task md5_filecheck {
     input {
