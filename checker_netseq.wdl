@@ -11,6 +11,7 @@ workflow checker_netseq {
 
     input {
         String srrId = "SRR12840066"
+        String refFasta
         Int maxReads = 1000
         Int limitedReads = 50
         File truth_md5
@@ -23,20 +24,24 @@ workflow checker_netseq {
             maxReads = maxReads,
             limitedReads = limitedReads
     }
-    # call netseq_wf.netseq as subject {
-    #     input:
-    #         sampleName = sampleName,
-    #         inputFastQ = inputFastQ
-    # }
 
-    # call md5_filecheck {
-    #     input:
-    #         sampleName = sampleName,
-    #         output_bam = subject.output_bam,
-    #         bedgraph_neg = subject.bedgraph_neg,
-    #         bedgraph_pos = subject.bedgraph_pos,
-    #         truth_md5 = truth_md5
-    # }
+    call netseq_wf.netseq as test1 {
+        input:
+            refFasta = refFasta,
+            inputFastQ = getSamples.fastqSample,
+            sampleName = "test1"
+    }
+
+    # TODO create object for 'bundle' of files to check
+    call md5_filecheck {
+        input:
+            sampleName = "test1",
+            fastq = getSamples.fastqSample,
+            output_bam = test1.output_bam,
+            bedgraph_neg = test1.bedgraph_neg,
+            bedgraph_pos = test1.bedgraph_pos,
+            truth_md5 = truth_md5
+    }
     
 }
 
@@ -73,6 +78,7 @@ task getSamples {
 task md5_filecheck {
     input {
         String sampleName
+        File fastq
         File output_bam
         File bedgraph_neg
         File bedgraph_pos
@@ -86,6 +92,7 @@ task md5_filecheck {
         . /bin/entrypoint.sh
 
         samtools view ~{output_bam} > ~{sampleName}.sam
+        gunzip -c ~{fastq} > ~{sampleName}.fastq
         gunzip -c ~{bedgraph_neg} > ~{sampleName}.neg.bedgraph
         gunzip -c ~{bedgraph_pos} > ~{sampleName}.pos.bedgraph
 

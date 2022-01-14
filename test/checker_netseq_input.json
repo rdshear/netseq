@@ -1,3 +1,4 @@
 {
-    "checker_netseq.truth_md5": "/Users/robertshear/Projects/netseq/test/truth.md5"
+    "checker_netseq.refFasta": "https://raw.githubusercontent.com/rdshear/netseq/main/test/sacCer3.fa",
+    "checker_netseq.truth_md5": "https://raw.githubusercontent.com/rdshear/netseq/main/test/truth.md5"
 }
