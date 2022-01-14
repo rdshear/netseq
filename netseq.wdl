@@ -81,6 +81,8 @@ parameter_meta {
         File bedgraph_pos = AlignReads.CoverageBedgraph_Pos
         File bedgraph_neg = AlignReads.CoverageBedgraph_Neg
         File alignment_log = AlignReads.star_log_final
+        File fastp_report_html = AlignReads.fastp_report_html
+        File fastp_report_json = AlignReads.fastp_report_json
     }
 }
 
