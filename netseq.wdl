@@ -52,6 +52,7 @@ parameter_meta {
         Int umiWidth = 6
 
         # environment
+        # TODO: version the image
         String netseq_docker = 'rdshear/netseq'
         Int preemptible = 1
         String memory = "8G"
@@ -136,7 +137,7 @@ task AlignReads {
             then echo -n fastp -i ~{Infile} --reads_to_process ~{maxReadCount}
             else echo -n fastq-dump $(if [[ ~{maxReadCount} -gt 0 ]]; then echo -n -X ~{maxReadCount}; fi) --stdout ~{sraRunId} "|" fastp --stdin
             fi)
-
+#TODO condition "dedup" processing on the presence of the umi   
         cmd=" $cmd --stdout -D --dup_calc_accuracy ~{DupCalcAccuracy} \
             --adapter_sequence ~{adapterSequence} \
             --umi --umi_len ~{umiWidth} --umi_loc per_read \
@@ -158,7 +159,7 @@ task AlignReads {
             --outFilterMultimapNmax ~{OutFilterMultiMax} \
             --clip3pAdapterSeq ~{adapterSequence} \
             --clip3pNbases 0 \
-            --clip5pNbases ~{umiWidth}  \
+            --clip5pNbases 0 \
             --limitBAMsortRAM 3221225472 \
             --alignIntronMax 1
         
