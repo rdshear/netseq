@@ -151,7 +151,8 @@ task AlignReads {
             --umi --umi_len ~{umiWidth} --umi_loc per_read \
             --umi_prefix umi \
             --html ~{sampleName}.fastp.html \
-            --json ~{sampleName}.fastp.json "
+            --json ~{sampleName}.fastp.json \
+            --report_title \"~{sampleName} fastp report\""
 
         echo "Computed fastq pull command: $cmd" 
 
@@ -179,8 +180,8 @@ task AlignReads {
 
     output {
         File star_log_final = "~{sampleName}.Log.final.out"
-        File fastp_report_html = "~{sampleName}.html"
-        File fastp_report_json = "~{sampleName}.json"
+        File fastp_report_html = "~{sampleName}.fastp.html"
+        File fastp_report_json = "~{sampleName}.fastp.json"
         File BamFile = bamFileName
         File CoverageBedgraph_Pos = '~{sampleName}.pos.bedgraph.gz'
         File CoverageBedgraph_Neg = '~{sampleName}.neg.bedgraph.gz'
