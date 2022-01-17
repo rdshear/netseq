@@ -47,4 +47,5 @@ Cromwell.stderr.txt
 Cromwell.stdout.txt
 */cromwell-input/*
 .vscode/launch.json
+.vscode/settings.json
 spitball.sh

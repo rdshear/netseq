@@ -1,26 +1,71 @@
 # NET-seq Pipeline
 
-The rdshear/netseq workflow transforms the raw sequence reads from the NET-seq assay to nucleotide resolution counts.
+The rdshear/netseq workflow transforms the raw sequence reads from the NET-seq assay to occupancy counts.
 
 ## Overview
 
-NET-seq (native elongating transcript sequencing) reports the density of active RNA elongation at nucleotide density (Churchman2011-me). 
+NET-seq (native elongating transcript sequencing) reports the strand-specific density of active RNA elongation density at single nucleotide resolution (Churchman2011-me). 
 The protocol results in a library of strand-specific short cDNA fragments, the 5'-end of which corresponds to the location of active elongation at the moment the sample was harvested.
-NET-seq provides nucleotide resolution and is strand-speific.
+
+The input to this pipeline is single-ended sequencing reads
+
+![FASTQ sequence schematic](./fastq_schematic.drawio.png)
+
+The pipeline takes as input a single-end FASTQ file, optionally gz compressed. 
+Alternatively, given an [NCBI Sequence Read Archive](https://www.ncbi.nlm.nih.gov/sra) run identifier, the pipeline will automatically download the file from SRA.
+
+The primary output of the pipeline is a pair of bedgraph files carrying the count at each nucleotide position.
 
 ### Processing Steps
 
+1. [sra-tools/fastp-dump](https://github.com/ncbi/sra-tools) (optional)
+    * Read public SRA archive data
+2. [fastp](https://github.com/OpenGene/fastp)
+    * Report on characteristics of FASTQ file
+    * Remove reads of poor quality
+    * Trim the 3'-end adapter
+    * Trim the UMI sequence at the 5'-end
+    * Remove duplicates (amplicons and optical duplicates)
+3. [STAR](https://github.com/alexdobin/STAR)
+    * Read and pre-process the reference genome
+    * Align to genome
+    * Remove ambiguous alignments ("multimappers)
+    * Generate coordinate-sorted BAM file
+4. [bedtools](https://github.com/arq5x/bedtools2/)
+    * Create the bedgraph files
 
-### Getting Started
-#### Customizing the workflow
+### Example inputs
 
-#### Configuration notws
+```
+{
 
-#### Time and cost estimates
+}
+```
+### Time and cost estimates
+
+|Sample Name|Reads|Bases|Duration|Cost|
+|-----------|-----|-----|--------|----|
+|SRR12840066|4.03G|52.97M|26 min|$0.02|
 
 ### Limitations
 
-only tested on sacCer3
+* This workflow has only been 
+    * tested on terra.bio
+    * aligned against the sacCer3 genome
+
+* Only tested on sacCer3.
+* Only tested on terra.bio
+* Steps 1-3 are "piped". Requires extra memory
+
+## Technical notes
+### Deduplication approach
+
+Dedup before alignment reduces possibility of interference by aligner
+### STAR aligner configuration
+
+No splicing. 44 nt average read length after trimming. Chance of a nascent co-transcrptionally spliced read is very low at best.
+
+[sra-tools gs problem!](https://www.ncbi.nlm.nih.gov/sra/docs/sra-cloud-access-costs/)
 ## Detailed Instructions
 ### Input
 
@@ -30,7 +75,7 @@ only tested on sacCer3
 |refFasta|String|Uri to genome geference gile, FASTA format|[^1]|
 |genomeName|String|UCSC genome version name|sacCer3|
 |inputFastQ|File|The reads to be processed in fastq format Extension must be ".fastq", ".fastq.gz" or ".fastq.gz.1"||
-|sraRunId|String|A [NCBI Sequence Read Archive](https://www.ncbi.nlm.nih.gov/sra) run identifier, e.g. SRR12840066. If inputFastQ is absent, then sraRunId must be present. If both are present, inputFastQ takes presidence.||
+|sraRunId|String|An SRA run identifier, e.g. SRR12840066. If inputFastQ is absent, then sraRunId must be present. If both are present, inputFastQ takes presidence.||
 |sampleName|String|An identifier for the sample in a format compatible with file names.|[^2]|
 |||**Preprocessing Parameters**||
 |maxReadCount|Int|If defined and greater than zero, then only the first _n_ reads will be processed. Useful for testing, but not for downsampling|0|
@@ -51,8 +96,6 @@ memory|String|The amount of RAM to use. The value is [dependent on the backend p
 
 ## Output
 
-TODO: Describe contents
-
 |Parameter|Type|Format|Example|
 |---------|----|-----------|-------|
 |output_bam|File|BAM|wt-1.bam|
@@ -70,9 +113,3 @@ Example workflow configurations...
 
 #### Steps
 
-## Technical notes
-### Workflow architecture
-### Deduplication approach
-
-44 nt average read length after trimming
-### STAR aligner configuration
