@@ -1,5 +1,5 @@
 {
-  "netseq.refFasta": "String",
+  "netseq.refFasta": "String (optional, default = \"https://hgdownload.soe.ucsc.edu/goldenPath/sacCer3/bigZips/sacCer3.fa.gz\")",
   "netseq.sampleName": "String? (optional)",
   "netseq.inputFastQ": "File? (optional)",
   "netseq.sraRunId": "String? (optional)",

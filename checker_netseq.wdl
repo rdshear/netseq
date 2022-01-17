@@ -25,11 +25,14 @@ workflow checker_netseq {
             limitedReads = limitedReads
     }
 
+    # need perfect reproducability for checksum comparison,
+    #   therefore declare single-threaded operation
     call netseq_wf.netseq as test1 {
         input:
             refFasta = refFasta,
             inputFastQ = getSamples.fastqSample,
-            sampleName = "test1"
+            sampleName = "test1",
+            threads = 1
     }
 
     # TODO create object for 'bundle' of files to check

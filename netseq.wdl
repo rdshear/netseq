@@ -8,7 +8,7 @@ workflow netseq {
 
 parameter_meta {
         # STAR index input
-        refFasta: "Url to genome geference gile, FASTA format"
+        refFasta: "Url to genome reference gile, FASTA format"
         genomeName: "Geneome name, UCSC version name, default sacCer3"
 
         # main input paramters
@@ -37,7 +37,7 @@ parameter_meta {
     input {
 
         # Genome source for STAR
-        String refFasta
+        String refFasta = "https://hgdownload.soe.ucsc.edu/goldenPath/sacCer3/bigZips/sacCer3.fa.gz"
         String genomeName = "sacCer3"
         Int outSAMmultNmax = 1     # Default to outputting primary alignment only. (Multimap count still available)
         Int OutFilterMultiMax = 10 # Default to dropping reads with more than 10 alignments
@@ -117,8 +117,16 @@ task AlignReads {
         # make sure that miniconda is properly initialized whether interactive or not
         . /bin/entrypoint.sh
 
-        wget --quiet ~{refFasta} -O ~{genomeName}.fa
-
+        # if pulling https://site/path/infile.fa.gz, then unzip it before storing it.
+        lclname=$(basename ~{refFasta})
+        extension=${lclname##*.}
+        unzipFasta=$(if [[ ${extension} == "gz" ]]
+            then 
+                echo "gzip --decompress - "
+            else
+                echo "cat"
+        fi)
+        wget --quiet ~{refFasta} -O - | ${unzipFasta} > ~{genomeName}.fa
         samtools faidx ./~{genomeName}.fa
 
         STAR \
@@ -142,8 +150,8 @@ task AlignReads {
             --adapter_sequence ~{adapterSequence} \
             --umi --umi_len ~{umiWidth} --umi_loc per_read \
             --umi_prefix umi \
-            --html ~{sampleName}.html \
-            --json ~{sampleName}.json "
+            --html ~{sampleName}.fastp.html \
+            --json ~{sampleName}.fastp.json "
 
         echo "Computed fastq pull command: $cmd" 
 
