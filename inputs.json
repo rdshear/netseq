@@ -11,7 +11,7 @@
 
   "netseq.AlignReads.DupCalcAccuracy": "Int (optional, default = 3)",
   "netseq.outSAMmultNmax": "Int (optional, default = 1)",
-  "netseq.OutFilterMultiMax": "Int (optional, default = 10)",
+  "netseq.outFilterMultiMax": "Int (optional, default = 10)",
 
   "netseq.memory": "String (optional, default = \"8G\")",
   "netseq.threads": "Int (optional, default = 4)",

@@ -20,7 +20,7 @@ parameter_meta {
         adapterSequence: "Adapter sequence to trim from 3' end"
         umiWidth: "Number of bases in UMI. Defaults to 6. If zero, no UMI deduplication occurs"
         outSAMmultNmax: "The number of alignments returned for each read. If 1, then no multimmappers are returned."
-        OutFilterMultiMax: "If a read has multimappers in excess of this paramter, then the read is disreagarded. Defaults"
+        outFilterMultiMax: "If a read has multimappers in excess of this paramter, then the read is disreagarded. Defaults"
 
         #Outputs
 
@@ -39,8 +39,8 @@ parameter_meta {
         # Genome source for STAR
         String refFasta = "https://hgdownload.soe.ucsc.edu/goldenPath/sacCer3/bigZips/sacCer3.fa.gz"
         String genomeName = "sacCer3"
-        Int outSAMmultNmax = 1     # Default to outputting primary alignment only. (Multimap count still available)
-        Int OutFilterMultiMax = 10 # Default to dropping reads with more than 10 alignments
+        Int outSAMmultNmax = 1     # Default to outputting primary alignment only.
+        Int outFilterMultiMax = 1   # Default to dropping reads with more than 1 alignment, implies ignore multi-mappers
 
         # Unprocessed reads
         File? inputFastQ
@@ -68,7 +68,7 @@ parameter_meta {
             genomeName = genomeName,
             maxReadCount = maxReadCount,
             outSAMmultNmax = outSAMmultNmax,
-            OutFilterMultiMax = OutFilterMultiMax,
+            outFilterMultiMax = outFilterMultiMax,
             adapterSequence = adapterSequence,
             umiWidth = umiWidth,
             threads = threads,
@@ -96,7 +96,7 @@ task AlignReads {
         String genomeName
         String sampleName
         Int outSAMmultNmax
-        Int OutFilterMultiMax
+        Int outFilterMultiMax
         String adapterSequence
         Int umiWidth
 
@@ -165,7 +165,7 @@ task AlignReads {
             --outSAMtype BAM SortedByCoordinate \
             --outReadsUnmapped None \
             --outSAMmultNmax ~{outSAMmultNmax} \
-            --outFilterMultimapNmax ~{OutFilterMultiMax} \
+            --outFilterMultimapNmax ~{outFilterMultiMax} \
             --clip3pAdapterSeq ~{adapterSequence} \
             --clip3pNbases 0 \
             --clip5pNbases 0 \

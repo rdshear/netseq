@@ -83,7 +83,7 @@ No splicing. 44 nt average read length after trimming. Chance of a nascent co-tr
 |umiWidth|Int|The number of nucleotides in the UMI. Zero indicates that no UMI is present, in which case no duplication will be performed|6|
 |||**STAR Aligner Parameters**||
 |outSAMmultNmax|Int|Default to outputting primary alignment only. The number of alignments returned for each read. If 1, then no multimmappers are returned|1|
-|OutFilterMultiMax|Int|If a read has multimappers in excess of this paramter, then the read is disreagarded|10|
+|outFilterMultiMax|Int|If a read has multimappers in excess of this paramter, then the read is disreagarded|10|
 |||**Environmental Parameters**||
 |netseq_docker|String|Override the name of the Docker image invoked by the workflow.|rdshear/netseq|
 |preemptible|Int|Applicable to Google cloud (GCP). The default value, 1, indicates that each task will be attempted first on a [spot instance](https://cloud.google.com/spot-vms). If spot instance is preemted, then it will be run on a standard on-demand instance   see [Cromwell Documentation](https://cromwell.readthedocs.io/en/stable/RuntimeAttributes/#preemptible) for details. *Caution* setting the preemptible parameter to zero is likely to dramatically incrase the cost running the workflow.|1|
