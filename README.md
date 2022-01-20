@@ -4,7 +4,7 @@ The rdshear/netseq workflow transforms the raw sequence reads from the NET-seq a
 
 ## Overview
 
-NET-seq (native elongating transcript sequencing) reports the strand-specific density of active RNA elongation density at single nucleotide resolution (Churchman2011-me). 
+NET-seq (native elongating transcript sequencing) reports the strand-specific density of active RNA elongation density at single nucleotide resolution (Churchman 2011, 2012). 
 The protocol results in a library of strand-specific short cDNA fragments, the 5'-end of which corresponds to the location of active elongation at the moment the sample was harvested.
 
 The input to this pipeline is single-ended sequencing reads
@@ -69,7 +69,7 @@ The primary output of the pipeline is a pair of bedgraph files carrying the coun
 ### Preprocessing with fastp
 
 Traditionally, preprocessing of raw read data (QC, adapter trimming, UMI removal) has been accomplished with seperate programs.
-The fastp program is not only quite fast, but also performs all of these function in a single pass.
+The fastp program (Chen 2018) is not only quite fast, but also performs all of these function in a single pass.
 Furthermore, fastp (since version 0.21) will remove duplicate reads tagged with a UMI random hexamer.
 
 ### STAR aligner configuration
@@ -95,7 +95,7 @@ Chance of a nascent co-transcrptionally spliced read is low.
 |umiWidth|Int|The number of nucleotides in the UMI. Zero indicates that no UMI is present, in which case no duplication will be performed|6|
 |||**STAR Aligner Parameters**||
 |outSAMmultNmax|Int|Default to outputting primary alignment only. The number of alignments returned for each read. If 1, then no multimmappers are returned|1|
-|outFilterMultiMax|Int|If a read has multimappers in excess of this paramter, then the read is disreagarded|10|
+|outFilterMultiMax|Int|If a read has multimappers in excess of this paramter, then the read is disreagarded. The default value 1 implies that only uniquely mapped reads will be reported.|1|
 |||**Environmental Parameters**||
 |netseq_docker|String|Override the name of the Docker image invoked by the workflow.|rdshear/netseq|
 |preemptible|Int|Applicable to Google cloud (GCP). The default value, 1, indicates that each task will be attempted first on a [spot instance](https://cloud.google.com/spot-vms). If spot instance is preemted, then it will be run on a standard on-demand instance   see [Cromwell Documentation](https://cromwell.readthedocs.io/en/stable/RuntimeAttributes/#preemptible) for details. *Caution* setting the preemptible parameter to zero is likely to dramatically incrase the cost running the workflow.|1|
@@ -104,7 +104,7 @@ memory|String|The amount of RAM to use. The value is [dependent on the backend p
 
 _Note 1_: `https://hgdownload.soe.ucsc.edu/goldenPath/sacCer3/bigZips/sacCer3.fa.gz`
 
-_Note 2_: For example, if sampleName is "wt-1", then the plus strand bedgraph output will have the filename "wt-1.pos.bedgraph.gz".|Will be constructed from the inputFastQ parameter file base name if defined, _viz._ "wt-1" from inputFastQ "wt-1.fastq.gz". If inputFastQ is not defined, then the sraRunId, _viz._ "SRR12840066".
+_Note 2_: For example, if sampleName is "wt-1", then the plus-strand bedgraph output will have the filename "wt-1.pos.bedgraph.gz". If the parameter is not set, then it Will be constructed from the inputFastQ parameter file base name if defined, _viz._ "wt-1" from inputFastQ "wt-1.fastq.gz". If inputFastQ is not defined, then the sraRunId, _viz._ "SRR12840066".
 
 ## Output
 
