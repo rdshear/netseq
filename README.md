@@ -36,11 +36,22 @@ The primary output of the pipeline is a pair of bedgraph files carrying the coun
 
 ### Example inputs
 
+#### Local fastq file
+
 ```
 {
-
+    "netseq.inputFastQ": "/n/groups/example/data/S005/wt-1.fastq.gz.1"
 }
 ```
+
+#### Fastq file from NCBI Sequence Read Archive
+```
+{
+    "netseq.sampleName": "wt-1",
+    "netseq.sraRunId": "SRR12840066"
+}
+```
+
 ### Time and cost estimates
 
 |Sample Name|Reads|Bases|Duration|Cost|
@@ -49,34 +60,35 @@ The primary output of the pipeline is a pair of bedgraph files carrying the coun
 
 ### Limitations
 
-* This workflow has only been 
-    * tested on terra.bio
-    * aligned against the sacCer3 genome
-
-* Only tested on sacCer3.
-* Only tested on terra.bio
-* Steps 1-3 are "piped". Requires extra memory
+* This workflow has been 
+    * tested only on terra.bio
+    * tested only with _S. cerevisiae_ samples and the sacCer3 geneome 
+    * tested only with hexamer UMIs
 
 ## Technical notes
-### Deduplication approach
+### Preprocessing with fastp
 
-Dedup before alignment reduces possibility of interference by aligner
+Traditionally, preprocessing of raw read data (QC, adapter trimming, UMI removal) has been accomplished with seperate programs.
+The fastp program is not only quite fast, but also performs all of these function in a single pass.
+Furthermore, fastp (since version 0.21) will remove duplicate reads tagged with a UMI random hexamer.
+
 ### STAR aligner configuration
 
-No splicing. 44 nt average read length after trimming. Chance of a nascent co-transcrptionally spliced read is very low at best.
-
-[sra-tools gs problem!](https://www.ncbi.nlm.nih.gov/sra/docs/sra-cloud-access-costs/)
+The STAR aligner has been configured to assume that no sequences are spliced. 
+We believe that this is the appropriate assumption.
+After trimming, the average read length of each nascent RNA is only 44 nt. 
+Chance of a nascent co-transcrptionally spliced read is low.
 ## Detailed Instructions
 ### Input
 
 |Parameter|Type|Description|Default Value|
 |---------|----|-----------|-------------|
 |||**Required Parameters**||
-|refFasta|String|Uri to genome geference gile, FASTA format|[^1]|
+|refFasta|String|Uri to genome geference gile, FASTA format|_Note 1_|
 |genomeName|String|UCSC genome version name|sacCer3|
 |inputFastQ|File|The reads to be processed in fastq format Extension must be ".fastq", ".fastq.gz" or ".fastq.gz.1"||
 |sraRunId|String|An SRA run identifier, e.g. SRR12840066. If inputFastQ is absent, then sraRunId must be present. If both are present, inputFastQ takes presidence.||
-|sampleName|String|An identifier for the sample in a format compatible with file names.|[^2]|
+|sampleName|String|An identifier for the sample in a format compatible with file names.|_Note 2_|
 |||**Preprocessing Parameters**||
 |maxReadCount|Int|If defined and greater than zero, then only the first _n_ reads will be processed. Useful for testing, but not for downsampling|0|
 |adapterSequence|String|The 3'-end adapter sequence|ATCTCGTATGCCGTCTTCTGCTTG|
@@ -90,9 +102,9 @@ No splicing. 44 nt average read length after trimming. Chance of a nascent co-tr
 memory|String|The amount of RAM to use. The value is [dependent on the backend platform](https://cromwell.readthedocs.io/en/stable/RuntimeAttributes/#memory). For [terra.bio]("https://terra.bio), the value _n_G indicates that it least _n_GiB are required to run the workflow |8G|
 |threads|Int|The number of cpus requested to run the workflow|4|
 
-[^1] https://hgdownload.soe.ucsc.edu/goldenPath/sacCer3/bigZips/sacCer3.fa.gz
+_Note 1_: `https://hgdownload.soe.ucsc.edu/goldenPath/sacCer3/bigZips/sacCer3.fa.gz`
 
-[^2] For example, if sampleName is "wt-1", then the plus strand bedgraph output will have the filename "wt-1.pos.bedgraph.gz".|Will be constructed from the inputFastQ parameter file base name if defined, _viz._ "wt-1" from inputFastQ "wt-1.fastq.gz". If inputFastQ is not defined, then the sraRunId, _viz._ "SRR12840066"|
+_Note 2_: For example, if sampleName is "wt-1", then the plus strand bedgraph output will have the filename "wt-1.pos.bedgraph.gz".|Will be constructed from the inputFastQ parameter file base name if defined, _viz._ "wt-1" from inputFastQ "wt-1.fastq.gz". If inputFastQ is not defined, then the sraRunId, _viz._ "SRR12840066".
 
 ## Output
 
@@ -105,11 +117,10 @@ memory|String|The amount of RAM to use. The value is [dependent on the backend p
 |fastp_report_html|File|html report|wt-1.fastp.html|
 |fastp_report_json|File|json|wt-1.fastp.json|
 
-### Running the workflow
+## References
 
-Example workflow configurations...
+Chen, S., Zhou, Y., Chen, Y., & Gu, J. (2018). fastp: an ultra-fast all-in-one FASTQ preprocessor. Bioinformatics , 34(17), i884–i890.
 
-####Test Data
+Churchman, L. S., & Weissman, J. S. (2011). Nascent transcript sequencing visualizes transcription at nucleotide resolution. Nature, 469(7330), 368–373.
 
-#### Steps
-
+Churchman, L. S., & Weissman, J. S. (2012). Native elongating transcript sequencing (NET-seq). Current Protocols in Molecular Biology / Edited by Frederick M. Ausubel... [et Al.], 1(SUPPL.98), 1–17.
