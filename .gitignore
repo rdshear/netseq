@@ -49,3 +49,4 @@ Cromwell.stdout.txt
 .vscode/launch.json
 .vscode/settings.json
 spitball.sh
+netseq.code-workspace
