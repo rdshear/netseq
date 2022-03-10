@@ -12,8 +12,8 @@ workflow checker_netseq {
     input {
         String srrId = "SRR12840066"
         String refFasta
-        Int maxReads = 1000
-        Int limitedReads = 50
+        Int maxReads = 10000
+        Int limitedReads = 5000
         File truth_md5
     }
 
@@ -32,6 +32,8 @@ workflow checker_netseq {
             refFasta = refFasta,
             inputFastQ = getSamples.fastqSample,
             sampleName = "test1",
+            outSAMmultNmax = 6,
+            outFilterMultiMax = 6,
             threads = 1
     }
 
@@ -59,7 +61,7 @@ task getSamples {
 
         # make sure that miniconda is properly initialized whether interactive or not
         . /bin/entrypoint.sh
-        fastq-dump -X 1000 ~{srrId} --stdout  > testsample.fastq
+        fastq-dump -X 10000 ~{srrId} --stdout  > testsample.fastq
         head -n ~{limitedReads*4} testsample.fastq > smallsample.fastq
         md5sum testsample.fastq smallsample.fastq > test.md5
         gzip testsample.fastq

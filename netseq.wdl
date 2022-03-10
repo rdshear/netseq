@@ -27,6 +27,8 @@ parameter_meta {
         output_bam: "aligned, deduped BAM faile"
         bedgraph_pos: "Occupancy counts on + strand, bedgraph format"
         bedgraph_neg: "Occupancy counts on - strand, bedgraph format"
+        mask_pos: "Coverage of multimappers on + strand, bedgraph format"
+        mask_neg: "Coverage of multimappers on - strand, bedgraph format"
 
         # Environment
         netseq_docker: "Name of docker image"
@@ -81,6 +83,8 @@ parameter_meta {
         File output_bam = AlignReads.BamFile
         File bedgraph_pos = AlignReads.CoverageBedgraph_Pos
         File bedgraph_neg = AlignReads.CoverageBedgraph_Neg
+        File mask_pos = AlignReads.MaskBedggraph_Pos
+        File mask_neg = AlignReads.MaskBedggraph_Neg
         File alignment_log = AlignReads.star_log_final
         File fastp_report_html = AlignReads.fastp_report_html
         File fastp_report_json = AlignReads.fastp_report_json
@@ -173,9 +177,19 @@ task AlignReads {
             --alignIntronMax 1
         
         mv ~{sampleName}.Aligned.sortedByCoord.out.bam ~{bamFileName}
+ 
+        tmpBAM=$(mktemp)
+        # create occupancy bedGraphs
+        samtools view -h --expr "[NH]==1" ~{bamFileName} -b > $tmpBAM
+        bedtools genomecov -5 -bg -strand - -ibam $tmpBAM | bgzip > ~{sampleName}.pos.bedgraph.gz
+        bedtools genomecov -5 -bg -strand + -ibam $tmpBAM | bgzip > ~{sampleName}.neg.bedgraph.gz
 
-        bedtools genomecov -5 -bg -strand - -ibam ~{bamFileName} | bgzip > ~{sampleName}.pos.bedgraph.gz
-        bedtools genomecov -5 -bg -strand + -ibam ~{bamFileName} | bgzip > ~{sampleName}.neg.bedgraph.gz
+        # create multimapper coverage (for masking) as bedGraphs
+        samtools view -h --expr "[NH]>1" ~{bamFileName} -b > $tmpBAM
+        bedtools genomecov -bg -strand - -ibam $tmpBAM | bgzip > ~{sampleName}.mask_pos.bedgraph.gz
+        bedtools genomecov -bg -strand + -ibam $tmpBAM | bgzip > ~{sampleName}.mask_neg.bedgraph.gz
+
+        rm $tmpBAM
     >>>
 
     output {
@@ -185,6 +199,8 @@ task AlignReads {
         File BamFile = bamFileName
         File CoverageBedgraph_Pos = '~{sampleName}.pos.bedgraph.gz'
         File CoverageBedgraph_Neg = '~{sampleName}.neg.bedgraph.gz'
+        File MaskBedggraph_Pos = '~{sampleName}.mask_pos.bedgraph.gz'
+        File MaskBedggraph_Neg = '~{sampleName}.mask_neg.bedgraph.gz'
     }
 
     runtime {

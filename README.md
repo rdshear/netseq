@@ -14,7 +14,12 @@ The input to this pipeline is single-ended sequencing reads
 The pipeline takes as input a single-end FASTQ file, optionally gz compressed. 
 Alternatively, given an [NCBI Sequence Read Archive](https://www.ncbi.nlm.nih.gov/sra) run identifier, the pipeline will automatically download the file from SRA.
 
+*Caution: Using SRA in GCP and AWS:* As of February 2022, NCBI appears to block access anonymous access to SRA public internet delivery from within GCP and AWS address spaces. 
+If pulling from SRA, we suggest using the NCBI (Cloud Data Delivery Service)[https://www.ncbi.nlm.nih.gov/sra/docs/data-delivery/] to transfer SRA fastq files to your GCP or AWS bucket.
+
 The primary output of the pipeline is a pair of bedgraph files carrying the count at each nucleotide position.
+A pair of corresponding bedgraph files is created that report the coverage of multi-mapped regions for this sample.
+These are referred to as masks and may be used to treat multi-mapped regions as censored instead of bearing an occupancy score of zero.
 
 ### Processing Steps
 
@@ -113,6 +118,8 @@ _Note 2_: For example, if sampleName is "wt-1", then the plus-strand bedgraph ou
 |output_bam|File|BAM|wt-1.bam|
 |bedgraph_pos|File|bedgraph (+) strand|wt-1.pos.bedgraph.gz|
 |bedgraph_neg|File|bedgraph (-) strand|wt-1.neg.bedgraph.gz|
+|mask_pos|File|bedgraph (+) strand|wt-1.mask_pos.bedgraph.gz|
+|mask_neg|File|bedgraph (-) strand|wt-1.mask_neg.bedgraph.gz|
 |alignment_log|File|text|wt-1.Log.final.out|
 |fastp_report_html|File|html report|wt-1.fastp.html|
 |fastp_report_json|File|json|wt-1.fastp.json|
