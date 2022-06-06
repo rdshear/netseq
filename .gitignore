@@ -50,3 +50,4 @@ Cromwell.stdout.txt
 .vscode/settings.json
 spitball.sh
 netseq.code-workspace
+wdl-ide-start.sh

@@ -170,7 +170,6 @@ task AlignReads {
             --outReadsUnmapped None \
             --outSAMmultNmax ~{outSAMmultNmax} \
             --outFilterMultimapNmax ~{outFilterMultiMax} \
-            --clip3pAdapterSeq ~{adapterSequence} \
             --clip3pNbases 0 \
             --clip5pNbases 0 \
             --limitBAMsortRAM 3221225472 \
