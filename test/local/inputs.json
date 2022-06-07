@@ -2,5 +2,6 @@
     "netseq.sraRunId": "SRR12840066",
     "netseq.maxReadCount": 10000,
     "netseq.outSAMmultNmax": 10,
-    "netseq.outFilterMultiMax": 10
+    "netseq.outFilterMultiMax": 10,
+    "netseq.DupCalcAccuracy": 1
 }

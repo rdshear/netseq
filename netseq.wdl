@@ -15,6 +15,7 @@ parameter_meta {
         inputFastQ: "Illumina Read file, FASTQ format"
         sampleName: "Sample name. If not specified, taken as base name of fastq input file"
         maxReadCount: "If defined, then maximum number of fastQ record to read"
+        DupCalcAccuracy: "Accuracy rate vs resource requirements for fastp UMI dedup process"
 
         # STAR alignment parameters
         adapterSequence: "Adapter sequence to trim from 3' end"
@@ -52,6 +53,7 @@ parameter_meta {
         String sampleName = basename(basename(select_first([inputFastQ, sraRunId, 'default']), ".gz"), ".fastq")
         String adapterSequence = "ATCTCGTATGCCGTCTTCTGCTTG"
         Int umiWidth = 6
+        Int DupCalcAccuracy = 3
 
         # environment
         # TODO: version the image
@@ -69,6 +71,7 @@ parameter_meta {
             sampleName = sampleName,
             genomeName = genomeName,
             maxReadCount = maxReadCount,
+            DupCalcAccuracy = DupCalcAccuracy,
             outSAMmultNmax = outSAMmultNmax,
             outFilterMultiMax = outFilterMultiMax,
             adapterSequence = adapterSequence,
@@ -99,12 +102,12 @@ task AlignReads {
         String refFasta
         String genomeName
         String sampleName
+        Int DupCalcAccuracy
         Int outSAMmultNmax
         Int outFilterMultiMax
         String adapterSequence
         Int umiWidth
 
-        Int DupCalcAccuracy = 3 # TODO DESCRIBE
         Int threads = 8
         String docker
         Int preemptible
