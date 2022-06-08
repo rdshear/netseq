@@ -9,7 +9,7 @@
   "netseq.genomeName": "String (optional, default = \"sacCer3\")",
   "netseq.maxReadCount": "Int (optional, default = 0)",
 
-  "netseq.AlignReads.DupCalcAccuracy": "Int (optional, default = 3)",
+  "netseq.AlignReads.dupCalcAccuracy": "Int (optional, default = 3)",
   "netseq.outSAMmultNmax": "Int (optional, default = 1)",
   "netseq.outFilterMultiMax": "Int (optional, default = 10)",
 

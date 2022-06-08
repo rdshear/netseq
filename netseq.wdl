@@ -15,7 +15,8 @@ parameter_meta {
         inputFastQ: "Illumina Read file, FASTQ format"
         sampleName: "Sample name. If not specified, taken as base name of fastq input file"
         maxReadCount: "If defined, then maximum number of fastQ record to read"
-        DupCalcAccuracy: "Accuracy rate vs resource requirements for fastp UMI dedup process"
+        dupCalcAccuracy: "Accuracy rate vs resource requirements for fastp UMI dedup process"
+        minimumReadLength: "Minimum length of read prior to alignment after adapter and UMI removal"
 
         # STAR alignment parameters
         adapterSequence: "Adapter sequence to trim from 3' end"
@@ -53,7 +54,8 @@ parameter_meta {
         String sampleName = basename(basename(select_first([inputFastQ, sraRunId, 'default']), ".gz"), ".fastq")
         String adapterSequence = "ATCTCGTATGCCGTCTTCTGCTTG"
         Int umiWidth = 6
-        Int DupCalcAccuracy = 3
+        Int dupCalcAccuracy = 3
+        Int minimumReadLength = 24
 
         # environment
         # TODO: version the image
@@ -71,7 +73,8 @@ parameter_meta {
             sampleName = sampleName,
             genomeName = genomeName,
             maxReadCount = maxReadCount,
-            DupCalcAccuracy = DupCalcAccuracy,
+            dupCalcAccuracy = dupCalcAccuracy,
+            minimumReadLength = minimumReadLength,
             outSAMmultNmax = outSAMmultNmax,
             outFilterMultiMax = outFilterMultiMax,
             adapterSequence = adapterSequence,
@@ -102,7 +105,8 @@ task AlignReads {
         String refFasta
         String genomeName
         String sampleName
-        Int DupCalcAccuracy
+        Int dupCalcAccuracy
+        Int minimumReadLength
         Int outSAMmultNmax
         Int outFilterMultiMax
         String adapterSequence
@@ -153,8 +157,9 @@ task AlignReads {
             else echo -n fastq-dump $(if [[ ~{maxReadCount} -gt 0 ]]; then echo -n -X ~{maxReadCount}; fi) --stdout ~{sraRunId} "|" fastp --stdin
             fi)
 #TODO condition "dedup" processing on the presence of the umi   
-        cmd=" $cmd --stdout -D --dup_calc_accuracy ~{DupCalcAccuracy} \
+        cmd=" $cmd --stdout -D --dup_calc_accuracy ~{dupCalcAccuracy} \
             --adapter_sequence ~{adapterSequence} \
+            --length_required ~{minimumReadLength} \
             --umi --umi_len ~{umiWidth} --umi_loc per_read \
             --umi_prefix umi \
             --html ~{sampleName}.fastp.html \

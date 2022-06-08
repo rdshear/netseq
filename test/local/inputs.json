@@ -3,5 +3,5 @@
     "netseq.maxReadCount": 10000,
     "netseq.outSAMmultNmax": 10,
     "netseq.outFilterMultiMax": 10,
-    "netseq.DupCalcAccuracy": 1
+    "netseq.dupCalcAccuracy": 1
 }

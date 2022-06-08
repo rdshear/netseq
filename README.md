@@ -98,7 +98,8 @@ Chance of a nascent co-transcrptionally spliced read is low.
 |maxReadCount|Int|If defined and greater than zero, then only the first _n_ reads will be processed. Useful for testing, but not for downsampling|0|
 |adapterSequence|String|The 3'-end adapter sequence|ATCTCGTATGCCGTCTTCTGCTTG|
 |umiWidth|Int|The number of nucleotides in the UMI. Zero indicates that no UMI is present, in which case no duplication will be performed|6|
-|DupCalcAccuracy|Int|An integer between 1 and 5. Larger number implies higher accuracy but more memory. See [fastp](https://github.com/OpenGene/fastp) for details. |3|
+|dupCalcAccuracy|Int|An integer between 1 and 5. Larger number implies higher accuracy but more memory. See [fastp](https://github.com/OpenGene/fastp) for details. |3|
+|minimumReadLength|Int|Minimum length of read prior to alignment after adapter and UMI removal|24|
 |||**STAR Aligner Parameters**||
 |outSAMmultNmax|Int|Default to outputting primary alignment only. The number of alignments returned for each read. If 1, then no multimmappers are returned|1|
 |outFilterMultiMax|Int|If a read has multimappers in excess of this paramter, then the read is disreagarded. The default value 1 implies that only uniquely mapped reads will be reported.|1|
