@@ -43,6 +43,8 @@ vignettes/*.pdf
 
 # cromwell / dockstore detritus
 cromwell-input/*
+cromwell-executions/*
+cromwell-workflow-logs/*
 Cromwell.stderr.txt
 Cromwell.stdout.txt
 */cromwell-input/*
