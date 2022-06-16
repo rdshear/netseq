@@ -55,10 +55,8 @@ task getSamples {
         Int limitedReads
     }
     command <<<
-        set -e
+        set -euxo pipefail
 
-        # make sure that miniconda is properly initialized whether interactive or not
-        . /bin/entrypoint.sh
         fastq-dump -X 10000 ~{srrId} --stdout  > testsample.fastq
         head -n ~{limitedReads*4} testsample.fastq > smallsample.fastq
         md5sum testsample.fastq smallsample.fastq > test.md5
