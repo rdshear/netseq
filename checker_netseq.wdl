@@ -41,8 +41,6 @@ workflow checker_netseq {
     call md5_filecheck {
         input:
             sampleName = "test1",
-            fastq = getSamples.fastqSample,
-            output_bam = test1.output_bam,
             bedgraph_neg = test1.bedgraph_neg,
             bedgraph_pos = test1.bedgraph_pos,
             truth_md5 = truth_md5
@@ -83,21 +81,14 @@ task getSamples {
 task md5_filecheck {
     input {
         String sampleName
-        File fastq
-        File output_bam
         File bedgraph_neg
         File bedgraph_pos
         File truth_md5
     }
 
     command <<<
-        set -e
+        set -euxo pipefail
 
-        # make sure that miniconda is properly initialized whether interactive or not
-        . /bin/entrypoint.sh
-
-        samtools view ~{output_bam} > ~{sampleName}.sam
-        gunzip -c ~{fastq} > ~{sampleName}.fastq
         gunzip -c ~{bedgraph_neg} > ~{sampleName}.neg.bedgraph
         gunzip -c ~{bedgraph_pos} > ~{sampleName}.pos.bedgraph
 
@@ -105,6 +96,6 @@ task md5_filecheck {
     >>>
 
     runtime {
-        docker: 'rdshear/netseq'
+        docker: 'debian'
     }
 }
